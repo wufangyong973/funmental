@@ -351,6 +351,16 @@ button { font: inherit; color: inherit; }
 .question-panel.flash-good { box-shadow: 0 0 0 3px var(--good), var(--shadow); }
 .question-panel.flash-bad { box-shadow: 0 0 0 3px var(--bad), var(--shadow); }
 
+/* Tactile feedback: buttons press in, answers pop when right and shake when wrong. */
+.choice, .tile, .icon-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.choice:active:not(:disabled), .tile:active:not(:disabled), .icon-btn:active:not(:disabled) { transform: scale(0.96); }
+.choice, .tile { transition: border-color 0.12s, background 0.12s, transform 0.08s; }
+.question .correct { animation: answer-pop 0.35s ease-out; }
+.question .wrong { animation: answer-shake 0.4s ease-in-out; }
+.tile.active { animation: tile-pick 0.18s ease-out; }
+.sound-toggle { display: grid; place-items: center; color: var(--text); }
+.sound-toggle[aria-pressed='false'] { color: var(--muted); }
+
 .question { display: flex; flex-direction: column; gap: 18px; }
 .prompt { font-size: clamp(1.3rem, 3.2vw, 1.8rem); font-weight: 900; line-height: 1.3; }
 .hint { color: var(--muted); font-size: 0.85rem; }
@@ -729,6 +739,7 @@ button { font: inherit; color: inherit; }
 .mastery-score { font-size: 2rem !important; line-height: 1.1; }
 .mastery-progress { display: flex; justify-content: space-between; align-items: baseline; }
 .mastery-progress .score { font-weight: 800; }
+.mastery-progress-end { display: flex; align-items: center; gap: 10px; }
 
 .wiki-pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border); }
 .wiki-pager-link {
@@ -978,6 +989,9 @@ button { font: inherit; color: inherit; }
 }
 
 @keyframes pulse { 50% { opacity: 0.5; } }
+@keyframes answer-pop { 40% { transform: scale(1.04); } }
+@keyframes answer-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+@keyframes tile-pick { 50% { transform: scale(1.05); } }
 @keyframes pop { from { transform: translate(-50%, -8px) scale(0.9); opacity: 0; } }
 
 @media (max-width: 600px) {

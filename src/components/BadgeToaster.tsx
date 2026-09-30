@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { badgeById } from '../lib/badges'
+import { play } from '../lib/sound'
 import { dismissBadgeToast, useAppData, useBadgeToasts } from '../lib/store'
 import { BadgeMedal } from './BadgeCard'
 
@@ -15,6 +16,7 @@ export function BadgeToaster() {
 
   useEffect(() => {
     if (!id) return
+    play('badge')
     const t = setTimeout(() => dismissBadgeToast(id), TOAST_MS)
     return () => clearTimeout(t)
   }, [id])

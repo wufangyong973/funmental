@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { BadgeCard } from '../components/BadgeCard'
 import { QuestionView } from '../components/QuestionView'
+import { SoundToggle } from '../components/SoundToggle'
 import { TierTrack } from '../components/TierTrack'
 import { nextQuestion } from '../content'
 import {
@@ -13,6 +14,7 @@ import {
   type PlacementState,
 } from '../lib/leveling'
 import { badgeById } from '../lib/badges'
+import { play } from '../lib/sound'
 import { setPlacement, useAppData } from '../lib/store'
 import { isSubject, subjectMeta } from '../lib/subjects'
 import { bandOf, tierLabel } from '../lib/tiers'
@@ -53,8 +55,11 @@ function PlacementTest({ subject }: { subject: SubjectId }) {
     if (placementDone(next)) {
       const tier = placementResult(next)
       setEarned(setPlacement(subject, tier))
+      play('complete')
       setResult(tier)
     } else {
+      // Neutral: placement doesn't reveal whether an answer was right.
+      play('submit')
       ask(next)
     }
   }
@@ -129,6 +134,7 @@ function PlacementTest({ subject }: { subject: SubjectId }) {
           <span className="timer">
             {n + 1} / {PLACEMENT_QUESTIONS}
           </span>
+          <SoundToggle />
         </div>
       </div>
       <div className="bar thin">

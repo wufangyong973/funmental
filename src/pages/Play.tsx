@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { QuestionView } from '../components/QuestionView'
+import { SoundToggle } from '../components/SoundToggle'
 import { nextQuestion } from '../content'
+import { play } from '../lib/sound'
 import { addSession, getData, recordAnswer, useAppData } from '../lib/store'
 import { isMode, isSubject, learnPath, modeMeta, subjectMeta } from '../lib/subjects'
 import { tierLabel } from '../lib/tiers'
@@ -93,7 +95,10 @@ function Game({ subject, mode }: { subject: SubjectId; mode: Mode }) {
     const id = setInterval(() => {
       const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
       setTimeLeft(left)
-      if (left === 0) finish()
+      if (left === 0 && !finished.current) {
+        play('complete')
+        finish()
+      }
     }, 200)
     return () => clearInterval(id)
   }, [phase, meta.seconds, finish])
@@ -105,19 +110,23 @@ function Game({ subject, mode }: { subject: SubjectId; mode: Mode }) {
   }, [toast])
 
   const advance = () => {
-    if (meta.length && statsRef.current.answered >= meta.length) finish()
-    else draw()
+    if (meta.length && statsRef.current.answered >= meta.length) {
+      play('complete')
+      finish()
+    } else draw()
   }
 
   const onSubmit = (correct: boolean) => {
     if (locked || finished.current) return
     setLocked(true)
     setLastCorrect(correct)
+    play(correct ? 'correct' : 'wrong')
     const s = { ...statsRef.current, answered: statsRef.current.answered + 1, correct: statsRef.current.correct + (correct ? 1 : 0) }
     statsRef.current = s
     setStats(s)
 
     const change = recordAnswer(subject, correct)
+    if (change > 0) play('levelUp')
     if (change !== 0) {
       const t = getData().subjects[subject].tier
       setToast({ text: change > 0 ? `Level up! Now at ${tierLabel(t)}` : `Adjusted to ${tierLabel(t)}`, up: change > 0 })
@@ -202,6 +211,7 @@ function Game({ subject, mode }: { subject: SubjectId; mode: Mode }) {
           <span className="pill">{tierLabel(getData().subjects[subject].tier)}</span>
           <span className={`timer ${meta.seconds && timeLeft <= 10 ? 'urgent' : ''}`}>{progressLabel}</span>
           <span className="score">✓ {stats.correct}</span>
+          <SoundToggle />
         </div>
       </div>
       <div className="bar thin">

@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
 import { nextQuestion } from '../content'
+import { play } from '../lib/sound'
 import { isPassing, MASTERY_PASS, MASTERY_QUESTIONS, masteryKey, recordQuizResult, useMastery } from '../lib/mastery'
 import { tierLabel } from '../lib/tiers'
 import type { Question, SubjectId } from '../types'
 import { QuestionView } from './QuestionView'
+import { SoundToggle } from './SoundToggle'
 
 type Phase = 'intro' | 'playing' | 'done'
 
@@ -48,6 +50,7 @@ export function MasteryQuiz({ subject, tier }: { subject: SubjectId; tier: numbe
     if (locked) return
     setLocked(true)
     setLastCorrect(correct)
+    play(correct ? 'correct' : 'wrong')
     if (correct) setScore((s) => s + 1)
   }
 
@@ -55,6 +58,7 @@ export function MasteryQuiz({ subject, tier }: { subject: SubjectId; tier: numbe
     if (index + 1 >= MASTERY_QUESTIONS) {
       const wasMastered = Boolean(record?.masteredAt)
       recordQuizResult(subject, tier, score)
+      play(isPassing(score) ? 'complete' : 'submit')
       setJustMastered(!wasMastered && isPassing(score))
       setPhase('done')
     } else {
@@ -134,7 +138,10 @@ export function MasteryQuiz({ subject, tier }: { subject: SubjectId; tier: numbe
         <span className="muted small">
           Question {index + 1} of {MASTERY_QUESTIONS}
         </span>
-        <span className="small score">✓ {score}</span>
+        <span className="mastery-progress-end">
+          <span className="small score">✓ {score}</span>
+          <SoundToggle />
+        </span>
       </div>
       <div className="bar thin">
         <div className="bar-fill" style={{ width: `${((index + (locked ? 1 : 0)) / MASTERY_QUESTIONS) * 100}%` }} />

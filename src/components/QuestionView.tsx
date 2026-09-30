@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { checkInput } from '../lib/answers'
 import { shuffle } from '../lib/random'
+import { play } from '../lib/sound'
 import type { BlankQuestion, ChoiceQuestion, InputQuestion, MatchQuestion, OrderQuestion, Question } from '../types'
 
 interface Props<Q> {
@@ -122,6 +123,7 @@ function MatchView({ q, locked, onSubmit }: Props<MatchQuestion>) {
 
   const linkRight = (ri: number) => {
     if (locked || active === null) return
+    play('tap')
     const next = { ...links }
     for (const k of Object.keys(next)) if (next[Number(k)] === ri) delete next[Number(k)]
     next[active] = ri
@@ -147,7 +149,11 @@ function MatchView({ q, locked, onSubmit }: Props<MatchQuestion>) {
               <button
                 key={i}
                 className={`tile ${active === i ? 'active' : ''} ${linked ? PAIR_COLORS[i] : ''} ${state}`}
-                onClick={() => !locked && setActive(i)}
+                onClick={() => {
+                  if (locked) return
+                  play('tap')
+                  setActive(i)
+                }}
                 disabled={locked}
               >
                 {l}
@@ -199,6 +205,7 @@ function OrderView({ q, locked, onSubmit }: Props<OrderQuestion>) {
   const move = (i: number, dir: -1 | 1) => {
     const j = i + dir
     if (j < 0 || j >= items.length) return
+    play('tap')
     const next = [...items]
     ;[next[i], next[j]] = [next[j], next[i]]
     setItems(next)
@@ -253,7 +260,15 @@ function BlankView({ q, locked, onSubmit }: Props<BlankQuestion>) {
       </p>
       <div className="tiles">
         {q.options.map((o) => (
-          <button key={o} className={`tile ${chosen === o ? 'active' : ''}`} onClick={() => setChosen(o)} disabled={locked}>
+          <button
+            key={o}
+            className={`tile ${chosen === o ? 'active' : ''}`}
+            onClick={() => {
+              play('tap')
+              setChosen(o)
+            }}
+            disabled={locked}
+          >
             {o}
           </button>
         ))}
