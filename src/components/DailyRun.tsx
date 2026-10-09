@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
-import { DAILY_DEPTHS, DAILY_LENGTH, DAILY_ZONE, dailyDepth, dailyQuestions } from '../lib/daily'
-import { DIFFICULTY_NAMES, ZONES, zoneIndexAt } from '../lib/ocean'
+import { DAILY_LENGTH, DAILY_ZONE, dailyHeight, dailyQuestions } from '../lib/daily'
+import { DIFFICULTY_NAMES, MILESTONES, ZONES, formatAltitude, zoneIndexAt } from '../lib/space'
 import { play } from '../lib/sound'
-import { DiveFrame, ProgressDots } from './DiveHud'
+import { FlightFrame, ProgressDots } from './FlightHud'
 import { Round } from './Round'
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
   onFinish: (answers: boolean[]) => void
 }
 
-/** Plays the seven questions of Daily Dive `n`. */
+/** Plays the seven questions of Daily Launch `n`. */
 export function DailyRun({ n, title, initial, onAnswer, onFinish }: Props) {
   const questions = useMemo(() => dailyQuestions(n), [n])
   const [answers, setAnswers] = useState<boolean[]>([...initial])
@@ -24,7 +24,7 @@ export function DailyRun({ n, title, initial, onAnswer, onFinish }: Props) {
   const [index, setIndex] = useState(initial.length)
   const [banner, setBanner] = useState<string | null>(null)
 
-  const depth = dailyDepth(answers)
+  const height = dailyHeight(answers)
   const answered = answers.length > index
 
   const handleAnswer = (correct: boolean) => {
@@ -34,8 +34,8 @@ export function DailyRun({ n, title, initial, onAnswer, onFinish }: Props) {
     answersRef.current = next
     setAnswers(next)
     onAnswer?.(next)
-    const after = zoneIndexAt(dailyDepth(next))
-    if (after > zoneIndexAt(dailyDepth(prev))) {
+    const after = zoneIndexAt(dailyHeight(next))
+    if (after > zoneIndexAt(dailyHeight(prev))) {
       play('levelUp')
       setBanner(ZONES[after].name)
     }
@@ -51,9 +51,10 @@ export function DailyRun({ n, title, initial, onAnswer, onFinish }: Props) {
 
   const zoneOf = (i: number) => ZONES[DAILY_ZONE[i]].id
   return (
-    <DiveFrame depth={depth} title={title} status={<ProgressDots answers={answers} total={DAILY_LENGTH} zoneOf={zoneOf} />} banner={banner}>
+    <FlightFrame height={height} title={title} status={<ProgressDots answers={answers} total={DAILY_LENGTH} zoneOf={zoneOf} />} banner={banner}>
       <p className="question-meta">
-        Question {index + 1} of {DAILY_LENGTH} · {DIFFICULTY_NAMES[questions[index].question.difficulty]} · worth {DAILY_DEPTHS[index].toLocaleString('en-US')} m
+        Question {index + 1} of {DAILY_LENGTH} · {DIFFICULTY_NAMES[questions[index].question.difficulty]}
+        {height < MILESTONES.length && ` · next stop ${MILESTONES[height].name}`}
       </p>
       <Round
         key={index}
@@ -61,8 +62,8 @@ export function DailyRun({ n, title, initial, onAnswer, onFinish }: Props) {
         onAnswered={handleAnswer}
         onNext={next}
         nextLabel={index + 1 >= DAILY_LENGTH ? 'See results' : 'Next question'}
-        outcome={answered ? (answers[index] ? `+${DAILY_DEPTHS[index].toLocaleString('en-US')} m` : '+0 m') : null}
+        outcome={answered ? (answers[index] ? `Up to ${MILESTONES[height - 1].name}, ${formatAltitude(height)}` : 'No climb this time') : null}
       />
-    </DiveFrame>
+    </FlightFrame>
   )
 }

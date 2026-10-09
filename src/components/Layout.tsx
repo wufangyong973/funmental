@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { dailyStreak } from '../lib/creatures'
+import { dailyStreak } from '../lib/discoveries'
 import { useAppData } from '../lib/store'
 import { Avatar } from './Avatar'
-import { CreatureToaster } from './CreatureToaster'
+import { DiscoveryToaster } from './DiscoveryToaster'
 import { FlameIcon } from './Icons'
 
 const LINKS = [
@@ -32,7 +32,7 @@ export function Layout() {
   }, [menuOpen])
 
   const profileChip = (
-    <NavLink to="/logbook" className="profile-chip" aria-label={`Logbook, ${days} day streak`} onClick={close}>
+    <NavLink to="/star-chart" className="profile-chip" aria-label={`Star chart, ${days} day streak`} onClick={close}>
       <Avatar name={data.profile.name} size="sm" />
       <span className="streak">
         <FlameIcon size={15} /> {days}
@@ -44,7 +44,7 @@ export function Layout() {
     <div className="app">
       <header className="topbar">
         <NavLink to="/" className="logo" onClick={close}>
-          fathom
+          apogee
         </NavLink>
         <nav className="nav-links" aria-label="Main">
           {LINKS.map((l) => (
@@ -79,7 +79,7 @@ export function Layout() {
         <>
           <div className="mobile-menu-backdrop" onClick={close} aria-hidden />
           <nav id="mobile-menu" className="mobile-menu" aria-label="Main">
-            {[...LINKS, { to: '/logbook', label: 'Logbook', end: false }].map((l) => (
+            {[...LINKS, { to: '/star-chart', label: 'Star chart', end: false }].map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} onClick={close}>
                 {l.label}
               </NavLink>
@@ -91,7 +91,7 @@ export function Layout() {
       <main className="main">
         <Outlet />
       </main>
-      <CreatureToaster />
+      <DiscoveryToaster />
     </div>
   )
 }

@@ -1,40 +1,41 @@
 import { useState } from 'react'
 import { AccountPanel } from '../components/AccountPanel'
 import { Avatar } from '../components/Avatar'
-import { CreatureIcon, TopicIcon } from '../components/Icons'
-import { CREATURES, dailyStreak, longestDailyStreak } from '../lib/creatures'
+import { DiscoveryIcon, TopicIcon } from '../components/Icons'
+import { DISCOVERIES, dailyStreak, longestDailyStreak } from '../lib/discoveries'
 import { addDays, dateKey, fromKey } from '../lib/dates'
-import { MAX_DEPTH, ZONES, formatDepth, zoneAt } from '../lib/ocean'
+import { MAX_HEIGHT, ZONES, formatAltitude, zoneAt } from '../lib/space'
 import { setSoundOn, useSoundOn } from '../lib/sound'
 import { resetAll, setProfileName, useAppData } from '../lib/store'
 import { MIXED, TOPICS } from '../lib/topics'
 
 const CALENDAR_WEEKS = 6
 
-export function Logbook() {
+/** Your profile, stats and discoveries. */
+export function StarChart() {
   const data = useAppData()
   const finished = Object.values(data.daily).filter((r) => r.finishedAt !== null)
-  const deepest = Math.max(0, ...finished.map((r) => r.depth), ...data.practice.map((p) => p.maxDepth))
-  const perfect = finished.filter((r) => r.depth >= MAX_DEPTH).length
-  const spotted = CREATURES.filter((c) => data.creatures[c.id]).length
+  const highest = Math.max(0, ...finished.map((r) => r.height), ...data.practice.map((p) => p.maxHeight))
+  const perfect = finished.filter((r) => r.height >= MAX_HEIGHT).length
+  const found = DISCOVERIES.filter((c) => data.discoveries[c.id]).length
 
   const tiles = [
     { label: 'day streak', value: String(dailyStreak(data)) },
     { label: 'longest streak', value: String(longestDailyStreak(data)) },
-    { label: 'daily dives', value: String(finished.length) },
-    { label: 'perfect dives', value: String(perfect) },
-    { label: 'deepest', value: formatDepth(deepest) },
-    { label: 'practice dives', value: String(data.practice.length) },
+    { label: 'daily launches', value: String(finished.length) },
+    { label: 'perfect launches', value: String(perfect) },
+    { label: 'farthest', value: formatAltitude(highest) },
+    { label: 'practice flights', value: String(data.practice.length) },
   ]
 
   return (
-    <div className="page logbook">
+    <div className="page star-chart">
       <section className="panel profile-header">
         <Avatar name={data.profile.name} size="lg" />
         <div>
           <NameEditor name={data.profile.name} />
           <p className="muted">
-            Diving since {new Date(data.profile.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+            Flying since {new Date(data.profile.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
       </section>
@@ -49,26 +50,21 @@ export function Logbook() {
       </section>
 
       <section className="panel">
-        <h2>Daily Dives</h2>
-        <DiveCalendar daily={data.daily} />
-      </section>
-
-      <section className="panel">
         <div className="section-head">
-          <h2>Creatures</h2>
+          <h2>Star chart</h2>
           <span className="muted small">
-            {spotted} of {CREATURES.length} spotted
+            {found} of {DISCOVERIES.length} discovered
           </span>
         </div>
         {ZONES.map((z) => (
-          <div key={z.id} className="creature-zone">
+          <div key={z.id} className="discovery-zone">
             <h3>{z.name}</h3>
-            <div className="creature-grid">
-              {CREATURES.filter((c) => c.zone === z.id).map((c) => {
-                const seen = data.creatures[c.id]
+            <div className="discovery-grid">
+              {DISCOVERIES.filter((c) => c.zone === z.id).map((c) => {
+                const seen = data.discoveries[c.id]
                 return (
-                  <div key={c.id} className={`creature ${seen ? 'seen' : 'unseen'}`}>
-                    <CreatureIcon id={c.id} size={40} />
+                  <div key={c.id} className={`discovery ${seen ? 'seen' : 'unseen'}`}>
+                    <DiscoveryIcon id={c.id} size={40} />
                     <strong>{seen ? c.name : '???'}</strong>
                     <span className="muted small">{seen ? c.fact : c.hint}</span>
                   </div>
@@ -79,18 +75,23 @@ export function Logbook() {
         ))}
       </section>
 
+      <section className="panel">
+        <h2>Daily Launches</h2>
+        <LaunchCalendar daily={data.daily} />
+      </section>
+
       {data.practice.length > 0 && (
         <section className="panel">
           <h2>Practice bests</h2>
           <ul className="bests">
             {[MIXED, ...TOPICS].map((t) => {
-              const best = Math.max(0, ...data.practice.filter((p) => p.topic === t.id).map((p) => p.maxDepth))
+              const best = Math.max(0, ...data.practice.filter((p) => p.topic === t.id).map((p) => p.maxHeight))
               return (
                 <li key={t.id}>
                   <span className="with-icon">
                     <TopicIcon topic={t.id} size={18} /> {t.name}
                   </span>
-                  <span className="muted">{best ? formatDepth(best) : '—'}</span>
+                  <span className="muted">{best ? formatAltitude(best) : '—'}</span>
                 </li>
               )
             })}
@@ -109,7 +110,7 @@ export function Logbook() {
   )
 }
 
-function DiveCalendar({ daily }: { daily: ReturnType<typeof useAppData>['daily'] }) {
+function LaunchCalendar({ daily }: { daily: ReturnType<typeof useAppData>['daily'] }) {
   const today = dateKey()
   const start = addDays(today, -(fromKey(today).getDay() + (CALENDAR_WEEKS - 1) * 7))
   const days = Array.from({ length: CALENDAR_WEEKS * 7 }, (_, i) => addDays(start, i))
@@ -118,8 +119,8 @@ function DiveCalendar({ daily }: { daily: ReturnType<typeof useAppData>['daily']
       {days.map((d) => {
         const r = daily[d]
         const future = d > today
-        const cls = future ? 'future' : !r?.finishedAt ? 'empty' : r.depth === 0 ? 'surface' : `z-${zoneAt(r.depth).id}`
-        const label = `${fromKey(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${r?.finishedAt ? formatDepth(r.depth) : 'no dive'}`
+        const cls = future ? 'future' : !r?.finishedAt ? 'empty' : r.height === 0 ? 'grounded' : `z-${zoneAt(r.height - 1).id}`
+        const label = `${fromKey(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${r?.finishedAt ? formatAltitude(r.height) : 'no launch'}`
         return <span key={d} role="listitem" className={`cal-day ${cls} ${d === today ? 'today' : ''}`} title={label} aria-label={label} />
       })}
     </div>
@@ -177,7 +178,7 @@ function ResetButton() {
   }
   return (
     <div className="row">
-      <span>This erases your dives and logbook on this device. Are you sure?</span>
+      <span>This erases your launches and star chart on this device. Are you sure?</span>
       <button className="btn danger" onClick={() => (resetAll(), setConfirm(false))}>
         Yes, reset
       </button>

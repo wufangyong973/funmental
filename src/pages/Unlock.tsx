@@ -13,7 +13,7 @@ export function Unlock() {
     return (
       <div className="page narrow">
         <h1>You have the full game</h1>
-        <p className="lead">Practice is unlocked. Dive as much as you like.</p>
+        <p className="lead">Practice is unlocked. Launch as much as you like.</p>
         <Link to="/practice" className="btn primary">
           Go to Practice
         </Link>
@@ -23,21 +23,21 @@ export function Unlock() {
 
   return (
     <div className="page narrow paywall">
-      <span className="eyebrow">Fathom: full game</span>
-      <h1>Keep diving after today's dive</h1>
-      <p className="lead">The Daily Dive is free forever. One purchase unlocks everything else, for good. There's no subscription.</p>
+      <span className="eyebrow">Apogee: full game</span>
+      <h1>Keep flying after today's launch</h1>
+      <p className="lead">The Daily Launch is free forever. One purchase unlocks everything else, for good. There's no subscription.</p>
       <ul className="perks">
         <li>
           <strong>Unlimited Practice</strong> in all 8 topics, or Mixed
         </li>
         <li>
-          <strong>Endless dives</strong> with oxygen tanks and streak boosts, from the Sunlight Zone to the Challenger Deep
+          <strong>Endless flights</strong> with fuel cells and streak boosts, from the edge of space to the Galactic Center
         </li>
         <li>
-          <strong>Every past Daily Dive</strong> to replay
+          <strong>Every past Daily Launch</strong> to replay
         </li>
         <li>
-          <strong>Practice-only creatures</strong> for your logbook
+          <strong>Practice-only discoveries</strong> for your star chart
         </li>
       </ul>
       <div className="price">

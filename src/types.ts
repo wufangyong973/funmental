@@ -10,9 +10,10 @@ export interface DailyResult {
   date: string
   number: number
   topic: TopicId
-  /** One entry per answered question, in order. Fewer than 7 means the dive is in progress. */
+  /** One entry per answered question, in order. Fewer than 7 means the launch is in progress. */
   answers: boolean[]
-  depth: number
+  /** Milestones reached (see src/lib/space.ts). */
+  height: number
   startedAt: number
   finishedAt: number | null
 }
@@ -22,23 +23,23 @@ export interface PracticeRecord {
   topic: PracticeTopic
   startedAt: number
   endedAt: number
-  maxDepth: number
+  maxHeight: number
   answered: number
   correct: number
   bestStreak: number
-  endReason: 'oxygen' | 'bottom' | 'quit'
+  endReason: 'fuel' | 'top' | 'quit'
 }
 
-export interface CreatureSighting {
+export interface Sighting {
   spottedAt: number
 }
 
 export interface AppData {
-  version: 2
+  version: 3
   profile: Profile
-  /** Daily Dive results by date. The first finished result for a date is final. */
+  /** Daily Launch results by date. The first finished result for a date is final. */
   daily: Record<string, DailyResult>
   practice: PracticeRecord[]
-  /** Creatures spotted, by id. Never taken away. */
-  creatures: Record<string, CreatureSighting>
+  /** Discoveries made, by id. Never taken away. */
+  discoveries: Record<string, Sighting>
 }

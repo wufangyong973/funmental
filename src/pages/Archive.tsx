@@ -6,7 +6,7 @@ import { dailyNumber, dailyTopic } from '../lib/daily'
 import { useUnlocked } from '../lib/unlock'
 import { topicMeta } from '../lib/topics'
 
-/** Replays a past Daily Dive. Part of Practice; nothing is saved and streaks aren't affected. */
+/** Replays a past Daily Launch. Part of Practice; nothing is saved and streaks aren't affected. */
 export function Archive() {
   const n = Number(useParams().n)
   const unlocked = useUnlocked()
@@ -26,5 +26,5 @@ export function Archive() {
       </div>
     )
   }
-  return <DailyRun key={n} n={n} title={`Replay · Fathom #${n} · ${topicMeta(topic).name}`} initial={[]} onFinish={setAnswers} />
+  return <DailyRun key={n} n={n} title={`Replay · Apogee #${n} · ${topicMeta(topic).name}`} initial={[]} onFinish={setAnswers} />
 }

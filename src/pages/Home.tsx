@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DepthLadder } from '../components/DepthCharts'
+import { AltitudeLadder } from '../components/ClimbCharts'
 import { FlameIcon, TopicIcon } from '../components/Icons'
 import { DAILY_LENGTH, DAILY_ZONE, dailyNumber, dailyTopic, shareText } from '../lib/daily'
-import { CREATURES, dailyStreak } from '../lib/creatures'
+import { DISCOVERIES, dailyStreak } from '../lib/discoveries'
 import { dateKey, fromKey, untilMidnight } from '../lib/dates'
-import { MAX_DEPTH, ZONES, formatDepth, zoneAt } from '../lib/ocean'
+import { MAX_HEIGHT, MILESTONES, ZONES, formatAltitude } from '../lib/space'
 import { shareResult } from '../lib/share'
 import { useAppData } from '../lib/store'
 import { topicMeta } from '../lib/topics'
@@ -20,7 +20,7 @@ function useCountdown() {
   return label
 }
 
-/** The surface: today's dive, your streak, and the way into Practice. */
+/** The launch pad: today's launch, your streak, and the way into Practice. */
 export function Home() {
   const data = useAppData()
   const unlocked = useUnlocked()
@@ -40,15 +40,15 @@ export function Home() {
   }
 
   const weekday = fromKey(today).toLocaleDateString(undefined, { weekday: 'long' })
-  const dives = Object.values(data.daily).filter((r) => r.finishedAt !== null).length
-  const spotted = Object.keys(data.creatures).length
+  const launches = Object.values(data.daily).filter((r) => r.finishedAt !== null).length
+  const found = Object.keys(data.discoveries).length
 
   return (
     <div className="page home">
       <section className="today">
         <div className="today-head">
           <span className="eyebrow">
-            Fathom #{n} · {weekday}
+            Apogee #{n} · {weekday}
           </span>
           <h1 className="topic-title">
             <TopicIcon topic={topic.id} size={30} />
@@ -57,18 +57,18 @@ export function Home() {
           {!done ? (
             <>
               <p className="lead">
-                {DAILY_LENGTH} questions, 20 seconds each. Every right answer takes you deeper. Get them all to reach the bottom of the Challenger Deep.
+                {DAILY_LENGTH} questions, 20 seconds each. Every right answer lifts you to the next milestone. Get them all to reach the center of the galaxy.
               </p>
               <Link to="/daily" className="btn primary big">
-                {result && result.answers.length > 0 ? `Continue dive (${result.answers.length}/${DAILY_LENGTH})` : 'Dive'}
+                {result && result.answers.length > 0 ? `Continue launch (${result.answers.length}/${DAILY_LENGTH})` : 'Launch'}
               </Link>
             </>
           ) : (
             <>
               <div className="hero-result">
-                <span className="results-depth">{formatDepth(result.depth)}</span>
+                <span className="results-altitude">{formatAltitude(result.height)}</span>
                 <span>
-                  {result.depth >= MAX_DEPTH ? 'Challenger Deep!' : result.depth > 0 ? zoneAt(result.depth).name : 'Surface'} · {result.answers.filter(Boolean).length} of 7 right
+                  {result.height >= MAX_HEIGHT ? 'Galactic Center!' : result.height > 0 ? MILESTONES[result.height - 1].name : 'Launch pad'} · {result.answers.filter(Boolean).length} of 7 right
                 </span>
               </div>
               <div className="squares">
@@ -84,11 +84,11 @@ export function Home() {
                   Review answers
                 </Link>
               </div>
-              <p className="small">Next dive in {countdown}.</p>
+              <p className="small">Next launch in {countdown}.</p>
             </>
           )}
         </div>
-        <DepthLadder depth={result ? result.depth : undefined} />
+        <AltitudeLadder height={result?.height} />
       </section>
 
       <p className="home-stats">
@@ -96,23 +96,23 @@ export function Home() {
           <FlameIcon /> {streak}-day streak
         </span>
         <span>
-          {dives} {dives === 1 ? 'dive' : 'dives'}
+          {launches} {launches === 1 ? 'launch' : 'launches'}
         </span>
         <span>
-          {spotted} of {CREATURES.length} creatures
+          {found} of {DISCOVERIES.length} discoveries
         </span>
       </p>
 
       <section className={`panel practice-card ${unlocked ? '' : 'locked'}`}>
         <div>
           <span className="eyebrow">{unlocked ? 'Practice' : 'Full game'}</span>
-          <h2>Want to keep diving?</h2>
+          <h2>Want to keep flying?</h2>
           <p className="muted">
-            Unlimited dives in any of 8 topics, with oxygen tanks and streak boosts, plus every past Daily Dive to replay.
+            Unlimited flights in any of 8 topics, with fuel cells and streak boosts, plus every past Daily Launch to replay.
           </p>
         </div>
         <Link to={unlocked ? '/practice' : '/unlock'} className="btn primary">
-          {unlocked ? 'Practice' : 'Unlock Fathom'}
+          {unlocked ? 'Practice' : 'Unlock Apogee'}
         </Link>
       </section>
     </div>

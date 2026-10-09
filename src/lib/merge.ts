@@ -19,19 +19,19 @@ export function mergeAppData(local: AppData, remote: AppData): AppData {
   const byId = new Map([...remote.practice, ...local.practice].map((p) => [p.id, p]))
   const practice = [...byId.values()].sort((x, y) => y.startedAt - x.startedAt).slice(0, MAX_PRACTICE)
 
-  const creatures: AppData['creatures'] = { ...remote.creatures }
-  for (const [id, c] of Object.entries(local.creatures)) {
-    if (!creatures[id] || c.spottedAt < creatures[id].spottedAt) creatures[id] = c
+  const discoveries: AppData['discoveries'] = { ...remote.discoveries }
+  for (const [id, c] of Object.entries(local.discoveries)) {
+    if (!discoveries[id] || c.spottedAt < discoveries[id].spottedAt) discoveries[id] = c
   }
 
   return migrate({
-    version: 2,
+    version: 3,
     profile: {
       name: local.profile.name || remote.profile.name,
       createdAt: Math.min(local.profile.createdAt, remote.profile.createdAt),
     },
     daily,
     practice,
-    creatures,
+    discoveries,
   })
 }

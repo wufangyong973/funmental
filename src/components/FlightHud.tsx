@@ -1,21 +1,21 @@
 import type { ReactNode } from 'react'
-import { formatDepth, zoneAt } from '../lib/ocean'
-import { DepthGauge, Ocean } from './Ocean'
+import { formatAltitude, zoneAt } from '../lib/space'
+import { AltitudeGauge, Sky } from './Sky'
 import { SoundToggle } from './SoundToggle'
 
-/** The frame around a dive: water, gauge, depth readout, and a slot for progress (dots or tanks). */
-export function DiveFrame({ depth, title, status, banner, children }: { depth: number; title: string; status: ReactNode; banner?: string | null; children: ReactNode }) {
+/** The frame around a flight: sky, gauge, altitude readout, and a slot for progress (dots or fuel cells). */
+export function FlightFrame({ height, title, status, banner, children }: { height: number; title: string; status: ReactNode; banner?: string | null; children: ReactNode }) {
   return (
-    <div className="dive">
-      <Ocean depth={depth} />
-      <DepthGauge depth={depth} />
-      <header className="dive-hud">
+    <div className="flight">
+      <Sky height={height} />
+      <AltitudeGauge height={height} />
+      <header className="flight-hud">
         <div>
           <span className="eyebrow">{title}</span>
-          <div className="depth-readout" aria-live="polite">
-            {formatDepth(depth)}
+          <div className="altitude-readout" aria-live="polite">
+            {formatAltitude(height)}
           </div>
-          <span className="zone-name">{zoneAt(depth).name}</span>
+          <span className="zone-name">{zoneAt(height).name}</span>
         </div>
         <div className="hud-right">
           {status}
@@ -24,10 +24,10 @@ export function DiveFrame({ depth, title, status, banner, children }: { depth: n
       </header>
       {banner && (
         <div className="zone-banner" role="status" key={banner}>
-          Entering the {banner}
+          Entering {banner}
         </div>
       )}
-      <div className="dive-body">{children}</div>
+      <div className="flight-body">{children}</div>
     </div>
   )
 }
@@ -43,11 +43,11 @@ export function ProgressDots({ answers, total, zoneOf }: { answers: readonly boo
   )
 }
 
-export function OxygenTanks({ oxygen, max }: { oxygen: number; max: number }) {
+export function FuelCells({ fuel, max }: { fuel: number; max: number }) {
   return (
-    <div className="tanks" aria-label={`${oxygen} of ${max} oxygen tanks left`}>
+    <div className="fuel-cells" aria-label={`${fuel} of ${max} fuel cells left`}>
       {Array.from({ length: max }, (_, i) => (
-        <span key={i} className={`tank ${i < oxygen ? 'full' : 'empty'}`} />
+        <span key={i} className={`cell ${i < fuel ? 'full' : 'empty'}`} />
       ))}
     </div>
   )

@@ -1,20 +1,17 @@
 import { ask, pool, type AskedQuestion } from '../content/questions'
 import type { Difficulty } from '../content/topics/types'
 import { addDays, dateKey, daysBetween } from './dates'
-import { ZONES, MAX_DEPTH } from './ocean'
+import { MAX_HEIGHT, ZONES, formatAltitude } from './space'
 import { seeded, shuffle } from './rng'
 import { TOPICS, type TopicId } from './topics'
 
-/** Fathom #1 is this date. */
+/** Apogee #1 is this date. */
 export const EPOCH = '2026-10-09'
 
 export const DAILY_LENGTH = 7
 
 /** Difficulty of each daily question, easiest first. */
 export const DAILY_DIFFICULTY: Difficulty[] = [1, 1, 2, 3, 3, 4, 5]
-
-/** Meters gained for each right answer; all seven reach the Challenger Deep. */
-export const DAILY_DEPTHS = [100, 100, 800, 1500, 1500, 2000, 4935]
 
 /** Ocean zone each daily question sits in. */
 export const DAILY_ZONE = DAILY_DIFFICULTY.map((d) => ZONES.findIndex((z) => z.difficulty === d))
@@ -53,13 +50,13 @@ export function dailyQuestions(n: number): AskedQuestion[] {
   return DAILY_DIFFICULTY.map((d) => ask(picked.get(d)!.shift()!, rand))
 }
 
-export function dailyDepth(answers: readonly boolean[]): number {
-  return Math.min(MAX_DEPTH, answers.reduce((sum, ok, i) => sum + (ok ? DAILY_DEPTHS[i] : 0), 0))
+/** Each right answer climbs one milestone, so seven reach the Galactic Center. */
+export function dailyHeight(answers: readonly boolean[]): number {
+  return Math.min(MAX_HEIGHT, answers.filter(Boolean).length)
 }
 
 /** Wordle-style result to paste into a chat. */
 export function shareText(n: number, topicName: string, answers: readonly boolean[]): string {
   const squares = answers.map((ok, i) => (ok ? ZONES[DAILY_ZONE[i]].square : '⬛')).join('')
-  const depth = dailyDepth(answers).toLocaleString('en-US')
-  return `Fathom #${n} · ${topicName}\n${squares}  ${depth} m`
+  return `Apogee #${n} · ${topicName}\n${squares}  ${formatAltitude(dailyHeight(answers))}`
 }

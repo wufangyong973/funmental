@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from 'react'
 import type { AppData, DailyResult, PracticeRecord } from '../types'
-import { newlySpotted } from './creatures'
+import { newlyFound } from './discoveries'
 import { emptyData, migrate } from './data'
 import { MAX_PRACTICE } from './merge'
 
+// Kept from Fathom so existing saves load; they're migrated on read.
 const KEY = 'fathom:v1'
 /** Funmental's save; its profile is carried over on first load. */
 const LEGACY_KEY = 'funmental:v1'
@@ -20,15 +21,15 @@ function load(): AppData {
 let data: AppData = load()
 const listeners = new Set<() => void>()
 
-// Creatures spotted during this visit, waiting to be shown.
+// Discoveries made during this visit, waiting to be shown.
 let toasts: string[] = []
 const toastListeners = new Set<() => void>()
 
-/** Saves the next state and adds any creatures it now qualifies for. */
+/** Saves the next state and adds any discoveries it now qualifies for. */
 function commit(next: AppData, { announce = true } = {}) {
-  const found = newlySpotted(next)
+  const found = newlyFound(next)
   const ids = Object.keys(found)
-  if (ids.length) next = { ...next, creatures: { ...next.creatures, ...found } }
+  if (ids.length) next = { ...next, discoveries: { ...next.discoveries, ...found } }
   data = next
   try {
     localStorage.setItem(KEY, JSON.stringify(next))
@@ -56,12 +57,12 @@ export const getData = () => data
 /** Notified after every change; used by cloud sync. */
 export const subscribeAppData = subscribe
 
-/** Replace local data with a merged copy from sync. Creatures found by the merge aren't announced. */
+/** Replace local data with a merged copy from sync. Discoveries found by the merge aren't announced. */
 export function replaceAppData(next: AppData) {
   commit(next, { announce: false })
 }
 
-export function useCreatureToasts(): string[] {
+export function useDiscoveryToasts(): string[] {
   return useSyncExternalStore(
     (l) => {
       toastListeners.add(l)
@@ -71,27 +72,27 @@ export function useCreatureToasts(): string[] {
   )
 }
 
-export function dismissCreatureToast(id: string) {
+export function dismissDiscoveryToast(id: string) {
   toasts = toasts.filter((t) => t !== id)
   toastListeners.forEach((l) => l())
 }
 
-/** Starts today's dive, or returns the one already under way. */
+/** Starts today's launch, or returns the one already under way. */
 export function startDaily(date: string, number: number, topic: DailyResult['topic']): DailyResult {
   const existing = data.daily[date]
   if (existing) return existing
-  const result: DailyResult = { date, number, topic, answers: [], depth: 0, startedAt: Date.now(), finishedAt: null }
+  const result: DailyResult = { date, number, topic, answers: [], height: 0, startedAt: Date.now(), finishedAt: null }
   commit({ ...data, daily: { ...data.daily, [date]: result } })
   return result
 }
 
 /** Records one answer. Each answer is saved as it happens, so a reload can't re-roll a question. */
-export function answerDaily(date: string, correct: boolean, depth: number, total: number) {
+export function answerDaily(date: string, correct: boolean, height: number, total: number) {
   const r = data.daily[date]
   if (!r || r.finishedAt !== null) return
   const answers = [...r.answers, correct]
   const finishedAt = answers.length >= total ? Date.now() : null
-  commit({ ...data, daily: { ...data.daily, [date]: { ...r, answers, depth, finishedAt } } })
+  commit({ ...data, daily: { ...data.daily, [date]: { ...r, answers, height, finishedAt } } })
 }
 
 export function addPractice(record: PracticeRecord) {

@@ -7,15 +7,15 @@ export const QUESTION_SECONDS = 20
 
 interface Props {
   asked: AskedQuestion
-  /** Called once, when the player picks an answer or the air runs out. */
+  /** Called once, when the player picks an answer or the fuel runs out. */
   onAnswered: (correct: boolean) => void
   onNext: () => void
   nextLabel?: string
-  /** A line shown above the explanation after answering, e.g. "+800 m". */
+  /** A line shown above the explanation after answering, e.g. "Up to The Moon". */
   outcome?: string | null
 }
 
-/** One question: four choices, an air timer, then the reveal and a Next button. */
+/** One question: four choices, a fuel timer, then the reveal and a Next button. */
 export function Round({ asked, onAnswered, onNext, nextLabel = 'Next', outcome }: Props) {
   const [picked, setPicked] = useState<number | null>(null)
   const [timedOut, setTimedOut] = useState(false)
@@ -65,7 +65,7 @@ export function Round({ asked, onAnswered, onNext, nextLabel = 'Next', outcome }
 
   return (
     <div className="round">
-      <div className={`air ${low && !done ? 'low' : ''}`} role="timer" aria-label={`${Math.ceil(left)} seconds of air left`}>
+      <div className={`fuel ${low && !done ? 'low' : ''}`} role="timer" aria-label={`${Math.ceil(left)} seconds of fuel left`}>
         <span style={{ width: `${(left / QUESTION_SECONDS) * 100}%` }} />
       </div>
       <h2 className="prompt">{asked.question.prompt}</h2>
@@ -81,7 +81,7 @@ export function Round({ asked, onAnswered, onNext, nextLabel = 'Next', outcome }
       </div>
       {done && (
         <div className={`reveal ${correct ? 'good' : 'bad'}`} role="status">
-          <strong>{timedOut ? 'Out of air!' : correct ? 'Correct!' : 'Not quite.'}</strong>
+          <strong>{timedOut ? 'Out of fuel!' : correct ? 'Correct!' : 'Not quite.'}</strong>
           {outcome && <span className="outcome">{outcome}</span>}
           {!correct && <p>The answer is {asked.choices[asked.answerIndex]}.</p>}
           {asked.question.explanation && <p className="muted">{asked.question.explanation}</p>}

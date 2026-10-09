@@ -1,26 +1,26 @@
 import { useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { DiveFrame, OxygenTanks } from '../components/DiveHud'
+import { FlightFrame, FuelCells } from '../components/FlightHud'
 import { TopicIcon } from '../components/Icons'
 import { Round } from '../components/Round'
 import type { AskedQuestion } from '../content/questions'
-import { DIFFICULTY_NAMES, MAX_DEPTH, ZONES, formatDepth, zoneAt } from '../lib/ocean'
-import { MAX_OXYGEN, answerPractice, nextPracticeQuestion, startPractice, streakBonus, type PracticeState } from '../lib/practice'
+import { DIFFICULTY_NAMES, MAX_HEIGHT, ZONES, formatAltitude, milestoneAt, zoneAt } from '../lib/space'
+import { MAX_FUEL, answerPractice, nextPracticeQuestion, startPractice, streakBonus, type PracticeState } from '../lib/practice'
 import { play } from '../lib/sound'
 import { addPractice } from '../lib/store'
 import { isPracticeTopic, topicMeta, type PracticeTopic } from '../lib/topics'
 import { useUnlocked } from '../lib/unlock'
 
-export function PracticeDive() {
+export function PracticeFlight() {
   const { topic } = useParams()
   const unlocked = useUnlocked()
   const [run, setRun] = useState(0)
   if (!unlocked) return <Navigate to="/unlock" replace />
   if (!isPracticeTopic(topic)) return <Navigate to="/practice" replace />
-  return <Dive key={`${topic}-${run}`} topic={topic} onAgain={() => setRun((r) => r + 1)} />
+  return <Flight key={`${topic}-${run}`} topic={topic} onAgain={() => setRun((r) => r + 1)} />
 }
 
-function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void }) {
+function Flight({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void }) {
   const meta = topicMeta(topic)
   const seen = useRef(new Set<string>())
   const startedAt = useRef(Date.now())
@@ -33,13 +33,13 @@ function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void })
   const [finished, setFinished] = useState(false)
   const saved = useRef(false)
 
-  function draw(depth: number) {
-    const q = nextPracticeQuestion(topic, depth, seen.current)
+  function draw(height: number) {
+    const q = nextPracticeQuestion(topic, height, seen.current)
     seen.current.add(q.question.id)
     return q
   }
 
-  const save = (s: PracticeState, endReason: 'oxygen' | 'bottom' | 'quit') => {
+  const save = (s: PracticeState, endReason: 'fuel' | 'top' | 'quit') => {
     if (saved.current || s.answered === 0) return
     saved.current = true
     addPractice({
@@ -47,7 +47,7 @@ function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void })
       topic,
       startedAt: startedAt.current,
       endedAt: Date.now(),
-      maxDepth: s.depth,
+      maxHeight: s.height,
       answered: s.answered,
       correct: s.correct,
       bestStreak: s.bestStreak,
@@ -64,7 +64,7 @@ function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void })
       setBanner(ZONES[step.enteredZone].name)
     }
     const bonus = streakBonus(step.state.streak)
-    setOutcome(correct ? `+${step.gained.toLocaleString('en-US')} m${bonus > 1 ? ` · ${step.state.streak} in a row` : ''}` : step.state.over ? 'Out of oxygen' : '−1 oxygen tank')
+    setOutcome(correct ? `Up to ${formatAltitude(step.state.height)}${bonus > 1 ? ` · ${step.state.streak} in a row` : ''}` : step.state.over ? 'Out of fuel' : '−1 fuel cell')
     if (step.state.over) save(step.state, step.state.over)
   }
 
@@ -76,11 +76,11 @@ function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void })
       setFinished(true)
       return
     }
-    setAsked(draw(stateRef.current.depth))
+    setAsked(draw(stateRef.current.height))
     setCount((c) => c + 1)
   }
 
-  const surface = () => {
+  const land = () => {
     save(stateRef.current, 'quit')
     setFinished(true)
   }
@@ -92,9 +92,9 @@ function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void })
         <span className="eyebrow with-icon">
           <TopicIcon topic={topic} size={16} /> Practice · {meta.name}
         </span>
-        <div className="results-depth">{formatDepth(s.depth)}</div>
+        <div className="results-altitude">{formatAltitude(s.height)}</div>
         <p className="lead">
-          {s.depth >= MAX_DEPTH ? 'You touched the bottom of the Challenger Deep!' : s.depth > 0 ? `You reached the ${zoneAt(s.depth).name}.` : 'You stayed near the surface.'}
+          {s.height >= MAX_HEIGHT ? 'You reached the center of the galaxy!' : milestoneAt(s.height) ? `You made it past ${milestoneAt(s.height)!.name}, into ${zoneAt(s.height).name}.` : 'You stayed close to Earth.'}
         </p>
         <div className="stats-row">
           <div className="stat">
@@ -110,7 +110,7 @@ function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void })
         </div>
         <div className="row">
           <button className="btn primary" onClick={onAgain}>
-            Dive again
+            Launch again
           </button>
           <Link to="/practice" className="btn ghost">
             Change topic
@@ -121,16 +121,16 @@ function Dive({ topic, onAgain }: { topic: PracticeTopic; onAgain: () => void })
   }
 
   return (
-    <DiveFrame depth={state.depth} title={`Practice · ${meta.name}`} status={<OxygenTanks oxygen={state.oxygen} max={MAX_OXYGEN} />} banner={banner}>
+    <FlightFrame height={state.height} title={`Practice · ${meta.name}`} status={<FuelCells fuel={state.fuel} max={MAX_FUEL} />} banner={banner}>
       <p className="question-meta">
-        {DIFFICULTY_NAMES[zoneAt(state.depth).difficulty]} questions{state.streak >= 3 ? ` · ${state.streak} in a row, descending ${Math.round((streakBonus(state.streak) - 1) * 100)}% faster` : ''}
+        {DIFFICULTY_NAMES[zoneAt(state.height).difficulty]} questions{state.streak >= 3 ? ` · ${state.streak} in a row, climbing ${Math.round((streakBonus(state.streak) - 1) * 100)}% faster` : ''}
       </p>
       <Round key={count} asked={asked} onAnswered={handleAnswer} onNext={next} nextLabel={state.over ? 'See results' : 'Next question'} outcome={outcome} />
       {!state.over && (
-        <button className="link-btn surface-btn" onClick={surface}>
-          Surface and end dive
+        <button className="link-btn land-btn" onClick={land}>
+          Land and end flight
         </button>
       )}
-    </DiveFrame>
+    </FlightFrame>
   )
 }

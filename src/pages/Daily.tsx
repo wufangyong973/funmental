@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { DailyResults } from '../components/DailyResults'
 import { DailyRun } from '../components/DailyRun'
-import { DAILY_LENGTH, dailyDepth, dailyNumber, dailyTopic } from '../lib/daily'
+import { DAILY_LENGTH, dailyHeight, dailyNumber, dailyTopic } from '../lib/daily'
 import { dateKey } from '../lib/dates'
 import { answerDaily, startDaily, useAppData } from '../lib/store'
 import { topicMeta } from '../lib/topics'
 
-/** Today's free dive. Each answer is saved as it's given, and there's one attempt per day. */
+/** Today's free launch. Each answer is saved as it's given, and there's one attempt per day. */
 export function Daily() {
   const [today] = useState(dateKey)
   const n = dailyNumber(today)
@@ -30,7 +30,7 @@ export function Daily() {
       <div className="page">
         <DailyResults n={n} topic={topic} answers={saved.answers}>
           <Link to="/" className="btn ghost">
-            Back to the surface
+            Back to Earth
           </Link>
         </DailyResults>
       </div>
@@ -40,11 +40,11 @@ export function Daily() {
   return (
     <DailyRun
       n={n}
-      title={`Fathom #${n} · ${topicMeta(topic).name}`}
+      title={`Apogee #${n} · ${topicMeta(topic).name}`}
       initial={saved.answers}
       onAnswer={(answers) => {
         setPlayedHere(true)
-        answerDaily(today, answers[answers.length - 1], dailyDepth(answers), DAILY_LENGTH)
+        answerDaily(today, answers[answers.length - 1], dailyHeight(answers), DAILY_LENGTH)
       }}
       onFinish={() => setShowResults(true)}
     />
