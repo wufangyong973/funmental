@@ -1,8 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { AppData } from '../types'
 import { emptyData, migrate } from './data'
-import { getMastery, replaceMastery, subscribeMastery, type MasteryData } from './mastery'
-import { mergeAppData, mergeMastery } from './merge'
+import { mergeAppData } from './merge'
 import { getData, replaceAppData, subscribeAppData } from './store'
 
 /**
@@ -23,16 +22,18 @@ export interface SyncState {
   /** null until checked; false when there's no API (e.g. a static-only deploy). */
   available: boolean | null
   user: SyncUser | null
+  /** Whether the signed-in account has bought the full game (Practice). */
+  unlocked: boolean
   status: SyncStatus
   lastSyncedAt: number | null
   error: string | null
 }
 
-const OWNER_KEY = 'funmental:sync-owner'
+const OWNER_KEY = 'fathom:sync-owner'
 const PUSH_DELAY_MS = 1500
 const MAX_CONFLICT_RETRIES = 3
 
-let state: SyncState = { available: null, user: null, status: 'idle', lastSyncedAt: null, error: null }
+let state: SyncState = { available: null, user: null, unlocked: false, status: 'idle', lastSyncedAt: null, error: null }
 const listeners = new Set<() => void>()
 
 let version = 0
@@ -100,13 +101,10 @@ function writeOwner(id: string) {
   }
 }
 
-const emptyMastery = (): MasteryData => ({ version: 1, grades: {} })
-
-function applyLocally(training: AppData, learn: MasteryData) {
+function applyLocally(save: AppData) {
   applying = true
   try {
-    replaceAppData(training)
-    replaceMastery(learn)
+    replaceAppData(save)
   } finally {
     applying = false
   }
@@ -115,7 +113,7 @@ function applyLocally(training: AppData, learn: MasteryData) {
 function signedOut() {
   clearTimeout(pushTimer)
   version = 0
-  set({ user: null, status: 'idle', error: null })
+  set({ user: null, unlocked: false, status: 'idle', error: null })
 }
 
 // ---------- sync ----------
@@ -130,20 +128,18 @@ async function pull() {
     if (res.status === 401) return signedOut()
     if (res.status !== 200) return set({ status: 'error', error: res.data?.error ?? 'Could not load your saved progress.' })
 
-    const remoteTraining: AppData | null = res.data.training ? migrate(res.data.training) : null
-    const remoteLearn: MasteryData | null = res.data.learn ?? null
+    const remote: AppData | null = res.data.save ? migrate(res.data.save) : null
 
     // Local progress that already belongs to another account must not leak into this one.
     const owner = readOwner()
     const mine = owner === null || owner === user.id
-    const training = mine ? (remoteTraining ? mergeAppData(getData(), remoteTraining) : getData()) : (remoteTraining ?? emptyData())
-    const learn = mine ? (remoteLearn ? mergeMastery(getMastery(), remoteLearn) : getMastery()) : (remoteLearn ?? emptyMastery())
+    const save = mine ? (remote ? mergeAppData(getData(), remote) : getData()) : (remote ?? emptyData())
 
     writeOwner(user.id)
     version = res.data.version
-    applyLocally(training, learn)
+    applyLocally(save)
 
-    if (stable(training) !== stable(res.data.training) || stable(learn) !== stable(res.data.learn)) await push()
+    if (stable(save) !== stable(res.data.save)) await push()
     else set({ status: 'synced', lastSyncedAt: Date.now(), error: null })
   } catch (e) {
     set(e instanceof Unavailable ? { available: false } : { status: 'offline' })
@@ -161,15 +157,13 @@ async function push(attempt = 0): Promise<void> {
   set({ status: 'syncing' })
   let retry = false
   try {
-    const res = await api('PUT', '/save', { training: getData(), learn: getMastery(), baseVersion: version })
+    const res = await api('PUT', '/save', { save: getData(), baseVersion: version })
     if (res.status === 200) {
       version = res.data.version
       set({ status: 'synced', lastSyncedAt: Date.now(), error: null })
     } else if (res.status === 409) {
       version = res.data.version
-      const training = res.data.training ? mergeAppData(getData(), migrate(res.data.training)) : getData()
-      const learn = res.data.learn ? mergeMastery(getMastery(), res.data.learn) : getMastery()
-      applyLocally(training, learn)
+      applyLocally(res.data.save ? mergeAppData(getData(), migrate(res.data.save)) : getData())
       retry = attempt < MAX_CONFLICT_RETRIES
       if (!retry) set({ status: 'error', error: 'Sync kept conflicting. It will try again on your next change.' })
     } else if (res.status === 401) {
@@ -203,7 +197,6 @@ export async function initSync() {
   if (started) return
   started = true
   subscribeAppData(onLocalChange)
-  subscribeMastery(onLocalChange)
   window.addEventListener('online', () => state.user && schedulePush(0))
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden' && pushTimer && state.user) {
@@ -215,7 +208,7 @@ export async function initSync() {
   try {
     const res = await api('GET', '/me')
     if (res.status === 200) {
-      set({ available: true, user: res.data.user })
+      set({ available: true, user: res.data.user, unlocked: !!res.data.unlocked })
       await pull()
     } else {
       set({ available: res.status === 401 })
@@ -229,7 +222,7 @@ async function authenticate(path: string, email: string, password: string): Prom
   try {
     const res = await api('POST', path, { email, password })
     if (res.status !== 200 && res.status !== 201) return res.data?.error ?? 'Something went wrong.'
-    set({ user: res.data.user, error: null })
+    set({ user: res.data.user, unlocked: !!res.data.unlocked, error: null })
     await pull()
     return null
   } catch (e) {
@@ -254,4 +247,19 @@ export async function logOut() {
     // Signing out locally still makes sense if the server is unreachable.
   }
   signedOut()
+}
+
+/**
+ * Development only: unlock Practice for the signed-in account without paying.
+ * The server refuses this in production. Returns an error message, or null.
+ */
+export async function devUnlock(): Promise<string | null> {
+  try {
+    const res = await api('POST', '/dev/unlock', {})
+    if (res.status !== 200) return res.data?.error ?? 'Could not unlock.'
+    set({ unlocked: true })
+    return null
+  } catch {
+    return "Couldn't reach the server."
+  }
 }

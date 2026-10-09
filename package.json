@@ -1,16 +1,16 @@
 {
-  "name": "funmental",
+  "name": "fathom",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node api.js && vite",
+    "build": "node api.js && tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
     "dev:server": "node --watch --env-file-if-exists=.env server/index.ts",
-    "start": "node server/index.ts"
+    "start": "node api.js && node server/index.ts"
   },
   "dependencies": {
     "express": "^5.2.1",

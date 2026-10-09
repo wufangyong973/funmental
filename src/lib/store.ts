@@ -1,16 +1,16 @@
 import { useSyncExternalStore } from 'react'
-import type { AppData, SessionRecord, SubjectId, SubjectProgress } from '../types'
-import { newlyEarned } from './badges'
+import type { AppData, DailyResult, PracticeRecord } from '../types'
+import { newlySpotted } from './creatures'
 import { emptyData, migrate } from './data'
-import { applyAnswer, type TierChange } from './leveling'
-import { todayKey } from './stats'
+import { MAX_PRACTICE } from './merge'
 
-const KEY = 'funmental:v1'
-const MAX_SESSIONS = 500
+const KEY = 'fathom:v1'
+/** Funmental's save; its profile is carried over on first load. */
+const LEGACY_KEY = 'funmental:v1'
 
 function load(): AppData {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY)
     return raw ? migrate(JSON.parse(raw)) : emptyData()
   } catch {
     return emptyData()
@@ -20,18 +20,15 @@ function load(): AppData {
 let data: AppData = load()
 const listeners = new Set<() => void>()
 
-// Badges earned during this visit, waiting to be shown as toasts.
+// Creatures spotted during this visit, waiting to be shown.
 let toasts: string[] = []
 const toastListeners = new Set<() => void>()
 
-/**
- * Saves the next state, awarding any badges it now qualifies for. Pass
- * `announce: false` when the caller shows the new badges itself.
- */
-function commit(next: AppData, { announce = true } = {}): string[] {
-  const awards = newlyEarned(next)
-  const earned = Object.keys(awards)
-  if (earned.length) next = { ...next, badges: { ...next.badges, ...awards } }
+/** Saves the next state and adds any creatures it now qualifies for. */
+function commit(next: AppData, { announce = true } = {}) {
+  const found = newlySpotted(next)
+  const ids = Object.keys(found)
+  if (ids.length) next = { ...next, creatures: { ...next.creatures, ...found } }
   data = next
   try {
     localStorage.setItem(KEY, JSON.stringify(next))
@@ -39,11 +36,10 @@ function commit(next: AppData, { announce = true } = {}): string[] {
     // Storage unavailable (private mode, quota); keep in-memory state.
   }
   listeners.forEach((l) => l())
-  if (announce && earned.length) {
-    toasts = [...toasts, ...earned]
+  if (announce && ids.length) {
+    toasts = [...toasts, ...ids]
     toastListeners.forEach((l) => l())
   }
-  return earned
 }
 
 function subscribe(listener: () => void) {
@@ -55,19 +51,17 @@ export function useAppData(): AppData {
   return useSyncExternalStore(subscribe, () => data)
 }
 
-export function getData(): AppData {
-  return data
-}
+export const getData = () => data
 
 /** Notified after every change; used by cloud sync. */
 export const subscribeAppData = subscribe
 
-/** Replace local data with a merged copy from sync. Badges earned by the merge aren't announced. */
+/** Replace local data with a merged copy from sync. Creatures found by the merge aren't announced. */
 export function replaceAppData(next: AppData) {
   commit(next, { announce: false })
 }
 
-export function useBadgeToasts(): string[] {
+export function useCreatureToasts(): string[] {
   return useSyncExternalStore(
     (l) => {
       toastListeners.add(l)
@@ -77,46 +71,31 @@ export function useBadgeToasts(): string[] {
   )
 }
 
-export function dismissBadgeToast(id: string) {
+export function dismissCreatureToast(id: string) {
   toasts = toasts.filter((t) => t !== id)
   toastListeners.forEach((l) => l())
 }
 
-function updateSubject(subject: SubjectId, progress: SubjectProgress, extra: Partial<AppData> = {}) {
-  return commit({ ...data, ...extra, subjects: { ...data.subjects, [subject]: progress } })
+/** Starts today's dive, or returns the one already under way. */
+export function startDaily(date: string, number: number, topic: DailyResult['topic']): DailyResult {
+  const existing = data.daily[date]
+  if (existing) return existing
+  const result: DailyResult = { date, number, topic, answers: [], depth: 0, startedAt: Date.now(), finishedAt: null }
+  commit({ ...data, daily: { ...data.daily, [date]: result } })
+  return result
 }
 
-export function recordAnswer(subject: SubjectId, correct: boolean): TierChange {
-  const { progress, change } = applyAnswer(data.subjects[subject], correct)
-  const today = todayKey()
-  const activeDays = data.activeDays.includes(today) ? data.activeDays : [...data.activeDays, today]
-  updateSubject(subject, progress, { activeDays })
-  return change
+/** Records one answer. Each answer is saved as it happens, so a reload can't re-roll a question. */
+export function answerDaily(date: string, correct: boolean, depth: number, total: number) {
+  const r = data.daily[date]
+  if (!r || r.finishedAt !== null) return
+  const answers = [...r.answers, correct]
+  const finishedAt = answers.length >= total ? Date.now() : null
+  commit({ ...data, daily: { ...data.daily, [date]: { ...r, answers, depth, finishedAt } } })
 }
 
-/**
- * Sets the subject's level from a placement test. The first placement is kept
- * as the subject's starting point; retakes move the level but not the start.
- * Returns ids of badges earned, which the caller is expected to show.
- */
-export function setPlacement(subject: SubjectId, tier: number): string[] {
-  const prev = data.subjects[subject]
-  const placements = data.placements[subject] ? data.placements : { ...data.placements, [subject]: { tier, at: Date.now() } }
-  return commit(
-    {
-      ...data,
-      placements,
-      subjects: {
-        ...data.subjects,
-        [subject]: { ...prev, tier, placed: true, window: [], bestTier: Math.max(prev.placed ? prev.bestTier : 0, tier) },
-      },
-    },
-    { announce: false },
-  )
-}
-
-export function addSession(session: SessionRecord) {
-  commit({ ...data, sessions: [session, ...data.sessions].slice(0, MAX_SESSIONS) })
+export function addPractice(record: PracticeRecord) {
+  commit({ ...data, practice: [record, ...data.practice].slice(0, MAX_PRACTICE) })
 }
 
 export function setProfileName(name: string) {

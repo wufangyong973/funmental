@@ -27,9 +27,16 @@ interface Options {
   secureCookies?: boolean
   /** Auth attempts allowed per IP per 15 minutes. */
   authLimit?: number
+  /** Allow POST /api/dev/unlock, which unlocks Practice for free. Never in production. */
+  allowDevUnlock?: boolean
 }
 
 type AuthedRequest = Request & { user?: SessionUser }
+
+/** The save lives in the `training` column, a name kept from Funmental so existing rows carry over. */
+function saveBody(row: { training: unknown; version: number; updated_at: Date } | undefined) {
+  return row ? { save: row.training, version: row.version, updatedAt: row.updated_at } : { save: null, version: 0, updatedAt: null }
+}
 
 function readCookie(req: Request, name: string): string | undefined {
   const header = req.headers.cookie
@@ -41,7 +48,7 @@ function readCookie(req: Request, name: string): string | undefined {
   return undefined
 }
 
-export function createApp({ db, staticDir, secureCookies = false, authLimit = 20 }: Options) {
+export function createApp({ db, staticDir, secureCookies = false, authLimit = 20, allowDevUnlock = false }: Options) {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', 1) // Railway terminates TLS in front of us.
@@ -136,14 +143,31 @@ export function createApp({ db, staticDir, secureCookies = false, authLimit = 20
     res.json({ ok: true })
   })
 
-  api.get('/me', requireUser, (req: AuthedRequest, res) => {
-    res.json({ user: req.user })
+  const isUnlocked = async (userId: string) => {
+    const { rows } = await db.query('SELECT 1 FROM entitlements WHERE user_id = $1 AND unlocked_at IS NOT NULL', [userId])
+    return rows.length > 0
+  }
+
+  api.get('/me', requireUser, async (req: AuthedRequest, res) => {
+    res.json({ user: req.user, unlocked: await isUnlocked(req.user!.id) })
   })
 
+  // Stand-in for the purchase flow until payments are wired up. A payment
+  // webhook will write the same entitlements row with source 'stripe'.
+  if (allowDevUnlock) {
+    api.post('/dev/unlock', requireUser, async (req: AuthedRequest, res) => {
+      await db.query(
+        `INSERT INTO entitlements (user_id, unlocked_at, source) VALUES ($1, now(), 'dev')
+         ON CONFLICT (user_id) DO UPDATE SET unlocked_at = COALESCE(entitlements.unlocked_at, now())`,
+        [req.user!.id],
+      )
+      res.json({ unlocked: true })
+    })
+  }
+
   api.get('/save', requireUser, async (req: AuthedRequest, res) => {
-    const { rows } = await db.query('SELECT training, learn, version, updated_at FROM saves WHERE user_id = $1', [req.user!.id])
-    const row = rows[0]
-    res.json(row ? { training: row.training, learn: row.learn, version: row.version, updatedAt: row.updated_at } : { training: null, learn: null, version: 0, updatedAt: null })
+    const { rows } = await db.query('SELECT training, version, updated_at FROM saves WHERE user_id = $1', [req.user!.id])
+    res.json(saveBody(rows[0]))
   })
 
   /**
@@ -151,10 +175,10 @@ export function createApp({ db, staticDir, secureCookies = false, authLimit = 20
    * On mismatch, return 409 with the current save so the client can merge and retry.
    */
   api.put('/save', requireUser, async (req: AuthedRequest, res) => {
-    const { training, learn, baseVersion } = req.body ?? {}
+    const { save, baseVersion } = req.body ?? {}
     const isObj = (v: unknown) => v === null || (typeof v === 'object' && !Array.isArray(v))
-    if (!isObj(training) || !isObj(learn) || !Number.isInteger(baseVersion)) {
-      res.status(400).json({ error: 'Expected { training, learn, baseVersion }' })
+    if (!isObj(save) || !Number.isInteger(baseVersion)) {
+      res.status(400).json({ error: 'Expected { save, baseVersion }' })
       return
     }
     const userId = req.user!.id
@@ -162,24 +186,21 @@ export function createApp({ db, staticDir, secureCookies = false, authLimit = 20
     const { rows } =
       baseVersion === 0
         ? await db.query(
-            `INSERT INTO saves (user_id, training, learn, version) VALUES ($1, $2, $3, 1)
+            `INSERT INTO saves (user_id, training, version) VALUES ($1, $2, 1)
              ON CONFLICT (user_id) DO NOTHING RETURNING version, updated_at`,
-            [userId, training, learn],
+            [userId, save],
           )
         : await db.query(
-            `UPDATE saves SET training = $2, learn = $3, version = version + 1, updated_at = now()
-             WHERE user_id = $1 AND version = $4 RETURNING version, updated_at`,
-            [userId, training, learn, baseVersion],
+            `UPDATE saves SET training = $2, learn = NULL, version = version + 1, updated_at = now()
+             WHERE user_id = $1 AND version = $3 RETURNING version, updated_at`,
+            [userId, save, baseVersion],
           )
     if (rows[0]) {
       res.json({ version: rows[0].version, updatedAt: rows[0].updated_at })
       return
     }
-    const current = await db.query('SELECT training, learn, version, updated_at FROM saves WHERE user_id = $1', [userId])
-    const row = current.rows[0]
-    res.status(409).json(
-      row ? { training: row.training, learn: row.learn, version: row.version, updatedAt: row.updated_at } : { training: null, learn: null, version: 0, updatedAt: null },
-    )
+    const current = await db.query('SELECT training, version, updated_at FROM saves WHERE user_id = $1', [userId])
+    res.status(409).json(saveBody(current.rows[0]))
   })
 
   app.use('/api', api)

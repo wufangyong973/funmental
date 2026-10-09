@@ -8,7 +8,7 @@ import { useSyncExternalStore } from 'react'
 
 export type Sound = 'tap' | 'submit' | 'correct' | 'wrong' | 'levelUp' | 'complete' | 'badge'
 
-const KEY = 'funmental:sound'
+const KEY = 'fathom:sound'
 
 function loadOn(): boolean {
   try {

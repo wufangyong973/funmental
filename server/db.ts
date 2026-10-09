@@ -39,5 +39,12 @@ export async function migrate(db: Db) {
       version integer NOT NULL DEFAULT 0,
       updated_at timestamptz NOT NULL DEFAULT now()
     );
+
+    -- Who has bought the full game. Owned by the server, never by the client save.
+    CREATE TABLE IF NOT EXISTS entitlements (
+      user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      unlocked_at timestamptz,
+      source text
+    );
   `)
 }

@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { streak } from '../lib/stats'
+import { dailyStreak } from '../lib/creatures'
 import { useAppData } from '../lib/store'
 import { Avatar } from './Avatar'
-import { BadgeToaster } from './BadgeToaster'
+import { CreatureToaster } from './CreatureToaster'
 
 const LINKS = [
-  { to: '/', label: 'Dashboard', end: true },
-  { to: '/learn', label: 'Learn' },
-  { to: '/history', label: 'History' },
+  { to: '/', label: 'Today', end: true },
+  { to: '/practice', label: 'Practice' },
 ]
 
 export function Layout() {
   const data = useAppData()
-  const days = streak(data.activeDays)
+  const days = dailyStreak(data)
   const { pathname } = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const close = () => setMenuOpen(false)
@@ -32,7 +31,7 @@ export function Layout() {
   }, [menuOpen])
 
   const profileChip = (
-    <NavLink to="/profile" className="profile-chip" aria-label={`Profile, ${days} day streak`} onClick={close}>
+    <NavLink to="/logbook" className="profile-chip" aria-label={`Logbook, ${days} day streak`} onClick={close}>
       <Avatar name={data.profile.name} size="sm" />
       <span className="streak">🔥 {days}</span>
     </NavLink>
@@ -42,7 +41,7 @@ export function Layout() {
     <div className="app">
       <header className="topbar">
         <NavLink to="/" className="logo" onClick={close}>
-          fun<span>mental</span>
+          fath<span>om</span>
         </NavLink>
         <nav className="nav-links" aria-label="Main">
           {LINKS.map((l) => (
@@ -77,7 +76,7 @@ export function Layout() {
         <>
           <div className="mobile-menu-backdrop" onClick={close} aria-hidden />
           <nav id="mobile-menu" className="mobile-menu" aria-label="Main">
-            {[...LINKS, { to: '/profile', label: 'Profile', end: false }].map((l) => (
+            {[...LINKS, { to: '/logbook', label: 'Logbook', end: false }].map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} onClick={close}>
                 {l.label}
               </NavLink>
@@ -89,7 +88,7 @@ export function Layout() {
       <main className="main">
         <Outlet />
       </main>
-      <BadgeToaster />
+      <CreatureToaster />
     </div>
   )
 }

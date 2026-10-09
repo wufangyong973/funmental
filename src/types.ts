@@ -1,100 +1,44 @@
-export type SubjectId = 'math' | 'reading' | 'science'
-
-export type Mode = 'rapid' | 'quiz' | 'puzzle'
-
-/** Where a question is being asked; decides which question formats are allowed. */
-export type Context = Mode | 'placement'
-
-interface QuestionBase {
-  id: string
-  tier: number
-  prompt: string
-  explanation?: string
-}
-
-export interface ChoiceQuestion extends QuestionBase {
-  kind: 'choice'
-  choices: string[]
-  answerIndex: number
-}
-
-export interface InputQuestion extends QuestionBase {
-  kind: 'input'
-  answer: string
-  accept?: string[]
-}
-
-export interface MatchQuestion extends QuestionBase {
-  kind: 'match'
-  pairs: [string, string][]
-}
-
-export interface OrderQuestion extends QuestionBase {
-  kind: 'order'
-  /** Items in the correct order. */
-  items: string[]
-}
-
-export interface BlankQuestion extends QuestionBase {
-  kind: 'blank'
-  /** Sentence containing "___" where the answer goes. */
-  sentence: string
-  answer: string
-  options: string[]
-}
-
-export type Question =
-  | ChoiceQuestion
-  | InputQuestion
-  | MatchQuestion
-  | OrderQuestion
-  | BlankQuestion
-
-export interface SubjectProgress {
-  tier: number
-  placed: boolean
-  /** Recent results at the current tier, newest last. Cleared on tier change. */
-  window: boolean[]
-  bestTier: number
-  answered: number
-  correct: number
-}
-
-export interface SessionRecord {
-  id: string
-  subject: SubjectId
-  mode: Mode
-  startedAt: number
-  endedAt: number
-  answered: number
-  correct: number
-  tierStart: number
-  tierEnd: number
-}
+import type { PracticeTopic, TopicId } from './lib/topics'
 
 export interface Profile {
   name: string
   createdAt: number
 }
 
-/** Where a subject began; recorded on the first placement test and never overwritten. */
-export interface PlacementRecord {
-  tier: number
-  at: number
+export interface DailyResult {
+  /** Local date, YYYY-MM-DD. */
+  date: string
+  number: number
+  topic: TopicId
+  /** One entry per answered question, in order. Fewer than 7 means the dive is in progress. */
+  answers: boolean[]
+  depth: number
+  startedAt: number
+  finishedAt: number | null
 }
 
-export interface BadgeAward {
-  earnedAt: number
+export interface PracticeRecord {
+  id: string
+  topic: PracticeTopic
+  startedAt: number
+  endedAt: number
+  maxDepth: number
+  answered: number
+  correct: number
+  bestStreak: number
+  endReason: 'oxygen' | 'bottom' | 'quit'
+}
+
+export interface CreatureSighting {
+  spottedAt: number
 }
 
 export interface AppData {
-  version: 1
+  version: 2
   profile: Profile
-  subjects: Record<SubjectId, SubjectProgress>
-  placements: Partial<Record<SubjectId, PlacementRecord>>
-  /** Earned badges by badge id. Once earned, a badge is never taken away. */
-  badges: Record<string, BadgeAward>
-  sessions: SessionRecord[]
-  /** Local dates (YYYY-MM-DD) with at least one answered question. */
-  activeDays: string[]
+  /** Daily Dive results by date. The first finished result for a date is final. */
+  daily: Record<string, DailyResult>
+  practice: PracticeRecord[]
+  /** Creatures spotted, by id. Never taken away. */
+  creatures: Record<string, CreatureSighting>
 }

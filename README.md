@@ -1,11 +1,11 @@
-# Funmental
+# Fathom
 
-A brain gym for adults. Train math, reading and science from Grade 1 up to College III.
+A daily trivia dive. Every day there's one free 7-question dive on a rotating topic, the same for everyone. Each right answer takes you deeper into the ocean, and the questions get harder as the water gets darker. Get all seven and you reach the bottom of the Challenger Deep, 10,935 m down.
 
 ```bash
 npm install
 npm run dev     # http://localhost:5173 (works on its own; progress stays in the browser)
-npm test        # leveling, answer checking, content validation, sync merging
+npm test        # question banks, daily deck, depth and oxygen rules, save merging
 npm run build
 ```
 
@@ -20,26 +20,17 @@ Server integration tests run when a throwaway database is provided: `TEST_DATABA
 
 ## How it works
 
-- **Tiers:** 15 levels per subject, grouped into bands: Elementary (Grades 1–5), Middle School (6–8), High School (9–12), and College I–III (`src/lib/tiers.ts`).
-- **Placement:** 8 adaptive questions set your starting tier. Each answer moves you up or down a step, and the steps shrink as the test goes on (`src/lib/leveling.ts`).
-- **Leveling:** every answer counts. Get 8 of your last 10 right at your tier to move up. Get 6 of your last 10 wrong and you drop a tier.
-- **Games:** Rapid Fire (60 seconds), Quiz (10 questions), and Puzzles (5 match, order, or fill-in-the-blank rounds).
-- **Learn:** a wiki-style study guide for each subject and grade, at `/learn/:subject/grade-N` or `/learn/:subject/college-N`. Each page has concept sections, worked examples, key formulas or vocabulary, and links to practice. Each grade also has a 10-question mastery quiz (8 or more correct to master), which adds a green check in the sidebar. Mastery is a refresher, stored separately under `funmental:learn:v1` (`src/lib/mastery.ts`), and never affects training levels, stats or badges.
-- **Profile & badges:** `/profile` shows lifetime stats, per-subject progress from where you began to now, personal bests, and an activity calendar. Badges are defined in `src/lib/badges.ts`. Each one is a condition checked after every change, and it's awarded automatically (retroactively, for older saves) and never taken away. The first set is one "Starting Line" badge per subject, which records your first placement. Retaking placement changes your level but not where you began.
-- **Storage:** progress and sessions are saved in `localStorage` under `funmental:v1` (`src/lib/store.ts`). The app is local-first and needs no server.
-- **Accounts & sync (optional):** with the server running, the profile page offers email/password accounts. Signing in merges this browser's progress with the account (`src/lib/merge.ts`). After that, changes save in the background (`src/lib/sync.ts`). The server stores one JSON save per user, with a version number, so a device holding stale data gets a conflict and merges instead of overwriting. Progress from one account is never merged into a different account on a shared browser. Without a server (e.g. a static deploy) the account section is hidden.
+- **Ocean zones** (`src/lib/ocean.ts`): Sunlight (0–200 m), Twilight (to 1,000 m), Midnight (to 4,000 m), Abyss (to 6,000 m) and Hadal (to 10,935 m). Each zone is a difficulty from 1 (Easy) to 5 (Expert).
+- **Daily Dive** (free, `src/lib/daily.ts`): 7 questions at difficulties 1, 1, 2, 3, 3, 4, 5, worth 100, 100, 800, 1,500, 1,500, 2,000 and 4,935 m. A miss earns nothing for that question and the dive carries on. Each question has 20 seconds; running out of air counts as a miss. Fathom #1 was 9 October 2026, and the day rolls over at local midnight. Topics take turns, one per day. Questions are dealt from a fixed, seeded deck per topic and difficulty, so every device gets the same dive with no server, and a topic doesn't repeat a question until it has used them all. Each answer is saved as it's given, so a reload can't re-roll a question. Results share as a grid of colored squares.
+- **Practice** (full game, `src/lib/practice.ts`): endless dives in any topic or Mixed. You have 3 oxygen tanks, a miss costs one, and reaching a new zone refills one. About seven right answers cross a zone; 3 in a row descends 25% faster and 5 in a row 50% faster. Practice also replays any past Daily Dive.
+- **Unlock** (`src/lib/unlock.ts`, `/unlock`): Practice is a one-time purchase tied to an account. Payments aren't wired up yet. The server keeps an `entitlements` table, and `/api/me` reports `unlocked`. To test, use the developer unlock on the unlock page, or add `?unlock=1` to the URL (development builds only). A dev server (not `NODE_ENV=production`) also accepts `POST /api/dev/unlock` for the signed-in account. A payment webhook will write the same row later.
+- **Logbook & creatures** (`src/lib/creatures.ts`): 14 creatures across the zones, each spotted by a milestone (reaching a zone, streaks, a perfect dive, Practice records). They're checked after every change and never taken away.
+- **Storage**: saves live in `localStorage` under `fathom:v1` (`src/lib/store.ts`). A Funmental save is read once and only its profile carries over.
+- **Accounts & sync (optional)**: same as before. The server stores one JSON save per user with a version number. Merging keeps the first finished result for each day, so a dive can't be replayed on a second device (`src/lib/merge.ts`).
 
-## Adding content
+## Adding questions
 
-- **Math** is generated by code in `src/content/math.ts`. Each tier has its own list of generator functions.
-- **Reading and science** questions live in `src/content/reading.ts` and `src/content/science.ts`. Each file has one bank per tier with:
-  - `mcq`: multiple-choice questions
-  - `terms`: vocabulary, used for definition questions and match puzzles
-  - `orders`: sequencing puzzles
-  - `cloze`: fill-in-the-blank sentences
-- **Study guides** live in `src/content/lessons/`, with one `Lesson` per tier in each subject file. Reading and science pages pull their key vocabulary from the practice banks automatically.
-
-`npm test` checks that every subject, tier, and game mode produces valid questions.
+Each topic has a bank in `src/content/topics/<topic>.ts`. A question is `[difficulty, prompt, correct answer, wrong, wrong, wrong, explanation?]`, with the correct answer always listed first; choices are shuffled when shown. A question's id comes from its prompt, so editing a prompt makes it a new question. `npm test` checks that every topic has enough questions at each difficulty, that no choices repeat, and that prompts are unique. Adding questions to the end of a bank changes which questions later Daily Dives deal, so add them before launch or accept that upcoming dives will shift.
 
 ## Deploying to Railway
 
