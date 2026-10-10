@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { THEMED_FROM, dailyQuestions } from '../lib/daily'
+import { dailyQuestions } from '../lib/daily'
 import { COUNTRIES, LOOKALIKE_FLAGS } from './countries'
 import { allPictureQuestions, picturePool } from './pictures'
 import type { Difficulty } from './topics/types'
@@ -34,8 +34,8 @@ describe('picture questions', () => {
     for (const g of LOOKALIKE_FLAGS) for (const c of g) expect(codes.has(c), c).toBe(true)
   })
 
-  it('every themed launch has one flag and one country outline', () => {
-    for (let n = THEMED_FROM; n < THEMED_FROM + 20; n++) {
+  it('every launch has one flag and one country outline', () => {
+    for (let n = 1; n <= 20; n++) {
       const kinds = dailyQuestions(n).map((q) => q.question.image?.kind).filter(Boolean)
       expect(kinds.sort(), `day ${n}`).toEqual(['flag', 'outline'])
     }

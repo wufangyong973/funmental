@@ -35,7 +35,7 @@ export function Home() {
 
   const share = async () => {
     if (!result) return
-    const r = await shareResult(shareText(n, topic.name, result.answers))
+    const r = await shareResult(shareText(n, result.answers))
     setShared(r === 'copied' ? 'Copied!' : r === 'shared' ? 'Shared!' : "Couldn't copy")
   }
 

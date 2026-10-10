@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { DAILY_LENGTH, DAILY_ZONE, dailyCategories, dailyHeight, dailyQuestions, dailyTopic } from '../lib/daily'
+import { DAILY_LENGTH, DAILY_ZONE, dailyCategories, dailyHeight, dailyQuestions } from '../lib/daily'
 import { DIFFICULTY_NAMES, MILESTONES, ZONES, formatAltitude, zoneIndexAt } from '../lib/space'
 import { play } from '../lib/sound'
 import { FlightFrame, ProgressDots } from './FlightHud'
@@ -18,8 +18,7 @@ interface Props {
 /** Plays the seven questions of Daily Launch `n`. */
 export function DailyRun({ n, title, initial, onAnswer, onFinish }: Props) {
   const questions = useMemo(() => dailyQuestions(n), [n])
-  // On mixed days each question names its category.
-  const categories = useMemo(() => (dailyTopic(n) === 'mixed' ? dailyCategories(n) : null), [n])
+  const categories = useMemo(() => dailyCategories(n), [n])
   const [answers, setAnswers] = useState<boolean[]>([...initial])
   const answersRef = useRef(answers)
   // The question on screen; it stays put after answering until Next is pressed.
@@ -55,8 +54,7 @@ export function DailyRun({ n, title, initial, onAnswer, onFinish }: Props) {
   return (
     <FlightFrame height={height} title={title} status={<ProgressDots answers={answers} total={DAILY_LENGTH} zoneOf={zoneOf} />} banner={banner}>
       <p className="question-meta">
-        Question {index + 1} of {DAILY_LENGTH}
-        {categories && ` · ${categories[index].name}`} · {DIFFICULTY_NAMES[questions[index].question.difficulty]}
+        Question {index + 1} of {DAILY_LENGTH} · {categories[index].name} · {DIFFICULTY_NAMES[questions[index].question.difficulty]}
         {height < MILESTONES.length && ` · next stop ${MILESTONES[height].name}`}
       </p>
       <Round

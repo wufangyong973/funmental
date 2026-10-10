@@ -5,7 +5,7 @@ import { ClimbProfile } from './ClimbCharts'
 import { TopicIcon } from './Icons'
 import { shareResult } from '../lib/share'
 import { standingText, useStanding } from '../lib/standing'
-import { topicMeta, type PracticeTopic } from '../lib/topics'
+import type { PracticeTopic } from '../lib/topics'
 
 interface Props {
   n: number
@@ -19,16 +19,15 @@ interface Props {
 /** End-of-launch summary: altitude, points and how they compare, the share grid, and each question with its answer. */
 export function DailyResults({ n, topic, answers, record = false, children }: Props) {
   const height = dailyHeight(answers)
-  const meta = topicMeta(topic)
   const questions = useMemo(() => dailyQuestions(n), [n])
-  const categories = useMemo(() => (topic === 'mixed' ? dailyCategories(n) : null), [n, topic])
+  const categories = useMemo(() => dailyCategories(n), [n])
   const [shared, setShared] = useState<string | null>(null)
   const right = answers.filter(Boolean).length
   const points = dailyPoints(answers)
   const standing = useStanding(n, answers, record)
 
   const share = async () => {
-    const r = await shareResult(shareText(n, meta.name, answers))
+    const r = await shareResult(shareText(n, answers))
     setShared(r === 'copied' ? 'Copied!' : r === 'shared' ? 'Shared!' : "Couldn't copy")
   }
 
@@ -68,7 +67,7 @@ export function DailyResults({ n, topic, answers, record = false, children }: Pr
             <div>
               <p>{q.question.prompt}</p>
               <p className="muted small">
-                {q.choices[q.answerIndex]} · {categories ? categories[i].name : ZONES[DAILY_ZONE[i]].name}
+                {q.choices[q.answerIndex]} · {categories[i].name}
               </p>
             </div>
           </li>

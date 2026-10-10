@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AppData, DailyResult } from '../types'
 import * as server from '../../server/scores.ts'
-import { DAILY_LENGTH, DAILY_POINTS, EPOCH, THEMED_FROM, dailyCategories, MAX_POINTS, dailyDate, dailyHeight, dailyNumber, dailyPoints, dailyQuestions, dailyTopic, shareText } from './daily'
+import { DAILY_LENGTH, DAILY_POINTS, EPOCH, dailyCategories, MAX_POINTS, dailyDate, dailyHeight, dailyNumber, dailyPoints, dailyQuestions, dailyTopic, shareText } from './daily'
 import { standingFrom, standingText } from './standing'
 import { emptyData, migrate } from './data'
 import { addDays, longestStreak, streak } from './dates'
@@ -21,15 +21,14 @@ const result = (date: string, answers: boolean[], finishedAt: number | null = 1)
 })
 
 describe('daily launch', () => {
-  it('numbers days from the epoch: one topic a day at first, then a mix', () => {
+  it('numbers days from the epoch', () => {
     expect(dailyNumber(EPOCH)).toBe(1)
     expect(dailyNumber(addDays(EPOCH, 9))).toBe(10)
     expect(dailyDate(10)).toBe(addDays(EPOCH, 9))
-    expect([1, 2, THEMED_FROM, 40].map(dailyTopic)).toEqual(['general', 'history', 'mixed', 'mixed'])
   })
 
-  it('gives every themed question its own category, with the core six every day', () => {
-    for (let n = THEMED_FROM; n < THEMED_FROM + 30; n++) {
+  it('gives every question its own category, with the core six every day', () => {
+    for (let n = 1; n <= 30; n++) {
       const cats = dailyCategories(n)
       const ids = cats.map((c) => c.id)
       expect(new Set(ids).size, `day ${n}`).toBe(DAILY_LENGTH)
@@ -41,7 +40,7 @@ describe('daily launch', () => {
       })
     }
     // The order changes from day to day.
-    expect(dailyCategories(THEMED_FROM).map((c) => c.id)).not.toEqual(dailyCategories(THEMED_FROM + 1).map((c) => c.id))
+    expect(dailyCategories(1).map((c) => c.id)).not.toEqual(dailyCategories(2).map((c) => c.id))
   })
 
   it('deals the same seven questions every time, easiest first', () => {
@@ -54,7 +53,7 @@ describe('daily launch', () => {
   })
 
   it("doesn't repeat a question until its deck runs out", () => {
-    const ids = Array.from({ length: 20 }, (_, i) => dailyQuestions(THEMED_FROM + i).map((q) => q.question.id)).flat()
+    const ids = Array.from({ length: 20 }, (_, i) => dailyQuestions(i + 1).map((q) => q.question.id)).flat()
     expect(new Set(ids).size).toBe(ids.length)
   })
 
@@ -65,8 +64,7 @@ describe('daily launch', () => {
   })
 
   it('builds a share grid', () => {
-    expect(shareText(2, 'History', [true, true, true, false, true, true, false])).toBe('Apogee #2 · History\n🟦🟦⬜⬛🟧🟪⬛  11/19 pts · 30 AU')
-    expect(shareText(12, 'Daily Mix', [true, true, true, false, true, true, false])).toBe('Apogee #12\n🟦🟦⬜⬛🟧🟪⬛  11/19 pts · 30 AU')
+    expect(shareText(12, [true, true, true, false, true, true, false])).toBe('Apogee #12\n🟦🟦⬜⬛🟧🟪⬛  11/19 pts · 30 AU')
   })
 })
 
@@ -193,10 +191,17 @@ describe('saves', () => {
     }
     const data = migrate(old, 99)
     expect(data.version).toBe(3)
-    expect(data.daily['2026-10-09'].height).toBe(5)
+    // Its one-topic launch doesn't match today's questions, so it's dropped; what it earned stays.
+    expect(data.daily).toEqual({})
     expect(data.practice[0]).toMatchObject({ maxHeight: 4.5, endReason: 'fuel' })
     expect(Object.keys(data.discoveries)).toEqual(expect.arrayContaining(['sputnik', 'hubble', 'moon', 'mars', 'jupiter', 'neptune']))
     expect(data.discoveries).not.toHaveProperty('clownfish')
+  })
+
+  it('drops launches from before Daily Mix', () => {
+    const mix = result('2026-10-10', Array(7).fill(true))
+    const saved = { ...emptyData(), daily: { '2026-10-09': { ...mix, date: '2026-10-09', topic: 'general' }, '2026-10-10': mix } }
+    expect(Object.keys(migrate(saved).daily)).toEqual(['2026-10-10'])
   })
 
   it('merging keeps the first finished result for a day', () => {
