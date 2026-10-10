@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AltitudeLadder } from '../components/ClimbCharts'
 import { FlameIcon, TopicIcon } from '../components/Icons'
-import { DAILY_LENGTH, DAILY_ZONE, dailyNumber, dailyTopic, shareText } from '../lib/daily'
+import { DAILY_LENGTH, DAILY_ZONE, dailyCategories, dailyNumber, dailyTopic, dailyTopicName, shareText } from '../lib/daily'
 import { DISCOVERIES, dailyStreak } from '../lib/discoveries'
 import { dateKey, fromKey, untilMidnight } from '../lib/dates'
 import { MAX_HEIGHT, MILESTONES, ZONES, formatAltitude } from '../lib/space'
 import { shareResult } from '../lib/share'
 import { useAppData } from '../lib/store'
-import { topicMeta } from '../lib/topics'
+import { TOPICS, topicMeta } from '../lib/topics'
 import { useUnlocked } from '../lib/unlock'
 
 function useCountdown() {
@@ -35,7 +35,7 @@ export function Home() {
 
   const share = async () => {
     if (!result) return
-    const r = await shareResult(shareText(n, topic.name, result.answers))
+    const r = await shareResult(shareText(n, result.answers))
     setShared(r === 'copied' ? 'Copied!' : r === 'shared' ? 'Shared!' : "Couldn't copy")
   }
 
@@ -52,8 +52,9 @@ export function Home() {
           </span>
           <h1 className="topic-title">
             <TopicIcon topic={topic.id} size={30} />
-            {topic.name}
+            {dailyTopicName(n)}
           </h1>
+          {topic.id === 'mixed' && <p className="category-list">{dailyCategories(n).map((c) => c.name).join(' · ')}</p>}
           {!done ? (
             <>
               <p className="lead">
@@ -108,7 +109,7 @@ export function Home() {
           <span className="eyebrow">{unlocked ? 'Practice' : 'Full game'}</span>
           <h2>Want to keep flying?</h2>
           <p className="muted">
-            Unlimited flights in any of 8 topics, with fuel cells and streak boosts, plus every past Daily Launch to replay.
+            Unlimited flights in any of {TOPICS.length} topics, with fuel cells and streak boosts, plus every past Daily Launch to replay.
           </p>
         </div>
         <Link to={unlocked ? '/practice' : '/unlock'} className="btn primary">

@@ -188,6 +188,7 @@ button { font: inherit; color: inherit; }
 .home { max-width: 680px; margin: 0 auto; width: 100%; }
 .today { display: flex; flex-direction: column; border-radius: 24px; overflow: hidden; background: var(--galaxy); }
 .today-head { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 26px 22px 18px; background: var(--galaxy); }
+.category-list { font-weight: 600; color: rgb(255 255 255 / 0.85); margin-top: -4px; }
 .today-head .eyebrow, .today-head .lead { color: rgb(255 255 255 / 0.8); }
 .topic-title { display: flex; align-items: center; gap: 10px; }
 .topic-title .icon { color: var(--flare); }

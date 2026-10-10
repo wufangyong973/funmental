@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dailyQuestions, GEOGRAPHY_PICTURES } from '../lib/daily'
-import { TOPICS } from '../lib/topics'
+import { dailyQuestions } from '../lib/daily'
 import { COUNTRIES, LOOKALIKE_FLAGS } from './countries'
 import { allPictureQuestions, picturePool } from './pictures'
 import type { Difficulty } from './topics/types'
@@ -35,12 +34,10 @@ describe('picture questions', () => {
     for (const g of LOOKALIKE_FLAGS) for (const c of g) expect(codes.has(c), c).toBe(true)
   })
 
-  it('every geography day has a flag and a country outline, and other days have none', () => {
-    for (let n = 1; n <= TOPICS.length * 3; n++) {
-      const kinds = dailyQuestions(n).map((q) => q.question.image?.kind)
-      const geography = dailyQuestions(n)[0].question.topic === 'geography'
-      expect(kinds.filter(Boolean).length, `day ${n}`).toBe(geography ? 2 : 0)
-      if (geography) for (const [i, kind] of Object.entries(GEOGRAPHY_PICTURES)) expect(kinds[Number(i)]).toBe(kind)
+  it('every launch has one flag and one country outline', () => {
+    for (let n = 1; n <= 20; n++) {
+      const kinds = dailyQuestions(n).map((q) => q.question.image?.kind).filter(Boolean)
+      expect(kinds.sort(), `day ${n}`).toEqual(['flag', 'outline'])
     }
   })
 

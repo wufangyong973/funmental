@@ -12,11 +12,11 @@ export type CountryRow = [string, string, Region, Difficulty, Difficulty | 0]
 
 export const COUNTRIES: CountryRow[] = [
   // Europe
-  ['fr', 'France', 'europe', 1, 2],
+  ['fr', 'France', 'europe', 1, 1],
   ['de', 'Germany', 'europe', 1, 3],
   ['it', 'Italy', 'europe', 1, 1],
-  ['es', 'Spain', 'europe', 1, 2],
-  ['gb', 'United Kingdom', 'europe', 1, 2],
+  ['es', 'Spain', 'europe', 1, 1],
+  ['gb', 'United Kingdom', 'europe', 1, 1],
   ['ch', 'Switzerland', 'europe', 1, 4],
   ['gr', 'Greece', 'europe', 1, 3],
   ['ie', 'Ireland', 'europe', 2, 3],
@@ -28,7 +28,7 @@ export const COUNTRIES: CountryRow[] = [
   ['fi', 'Finland', 'europe', 2, 3],
   ['dk', 'Denmark', 'europe', 2, 4],
   ['ua', 'Ukraine', 'europe', 2, 3],
-  ['ru', 'Russia', 'europe', 2, 2],
+  ['ru', 'Russia', 'europe', 2, 1],
   ['is', 'Iceland', 'europe', 3, 2],
   ['at', 'Austria', 'europe', 3, 4],
   ['pl', 'Poland', 'europe', 3, 4],
@@ -69,7 +69,7 @@ export const COUNTRIES: CountryRow[] = [
   ['tt', 'Trinidad and Tobago', 'north-america', 5, 0],
 
   // South America
-  ['br', 'Brazil', 'south-america', 1, 2],
+  ['br', 'Brazil', 'south-america', 1, 1],
   ['ar', 'Argentina', 'south-america', 2, 3],
   ['cl', 'Chile', 'south-america', 2, 1],
   ['co', 'Colombia', 'south-america', 3, 4],
@@ -81,9 +81,9 @@ export const COUNTRIES: CountryRow[] = [
   ['py', 'Paraguay', 'south-america', 5, 5],
 
   // Asia
-  ['jp', 'Japan', 'asia', 1, 2],
-  ['cn', 'China', 'asia', 1, 2],
-  ['in', 'India', 'asia', 1, 2],
+  ['jp', 'Japan', 'asia', 1, 1],
+  ['cn', 'China', 'asia', 1, 1],
+  ['in', 'India', 'asia', 1, 1],
   ['kr', 'South Korea', 'asia', 2, 3],
   ['kp', 'North Korea', 'asia', 3, 4],
   ['vn', 'Vietnam', 'asia', 3, 3],

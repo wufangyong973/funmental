@@ -5,6 +5,7 @@ import { food } from './topics/food'
 import { general } from './topics/general'
 import { geography } from './topics/geography'
 import { history } from './topics/history'
+import { math } from './topics/math'
 import { music } from './topics/music'
 import { science } from './topics/science'
 import { screen } from './topics/screen'
@@ -24,7 +25,7 @@ export interface TriviaQuestion {
   image?: { kind: PictureKind; src: string; alt: string }
 }
 
-export const BANKS: Record<TopicId, RawQuestion[]> = { general, history, science, screen, geography, music, sports, food }
+export const BANKS: Record<TopicId, RawQuestion[]> = { general, history, science, math, screen, geography, music, sports, food }
 
 function build(topic: TopicId, [difficulty, prompt, a, b, c, d, explanation]: RawQuestion): TriviaQuestion {
   return { id: `${topic}-${hashString(prompt).toString(36)}`, topic, difficulty, prompt, answers: [a, b, c, d], explanation }

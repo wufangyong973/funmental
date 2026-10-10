@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { devUnlock, useSync } from '../lib/sync'
 import { canDevUnlock, setDevUnlocked, useUnlocked } from '../lib/unlock'
+import { TOPICS } from '../lib/topics'
 
 /** What the full game includes. Payments aren't wired up yet, so the purchase button is a placeholder. */
 export function Unlock() {
@@ -28,7 +29,7 @@ export function Unlock() {
       <p className="lead">The Daily Launch is free forever. One purchase unlocks everything else, for good. There's no subscription.</p>
       <ul className="perks">
         <li>
-          <strong>Unlimited Practice</strong> in all 8 topics, or Mixed
+          <strong>Unlimited Practice</strong> in all {TOPICS.length} topics, or Mixed
         </li>
         <li>
           <strong>Endless flights</strong> with fuel cells and streak boosts, from the edge of space to the Galactic Center

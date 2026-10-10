@@ -57,5 +57,8 @@ export function migrate(saved: unknown, now = Date.now()): AppData {
     return { ...base, profile }
   }
   data.discoveries = { ...data.discoveries, ...newlyFound(data, now) }
+  // Launches from before Daily Mix had one topic and other questions, so their results no longer line up.
+  // Discoveries they earned are kept.
+  data.daily = Object.fromEntries(Object.entries(data.daily).filter(([, r]) => r.topic === 'mixed'))
   return data
 }

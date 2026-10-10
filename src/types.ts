@@ -1,4 +1,4 @@
-import type { PracticeTopic, TopicId } from './lib/topics'
+import type { PracticeTopic } from './lib/topics'
 
 export interface Profile {
   name: string
@@ -9,7 +9,8 @@ export interface DailyResult {
   /** Local date, YYYY-MM-DD. */
   date: string
   number: number
-  topic: TopicId
+  /** 'mixed' for a launch with a different category per question. */
+  topic: PracticeTopic
   /** One entry per answered question, in order. Fewer than 7 means the launch is in progress. */
   answers: boolean[]
   /** Milestones reached (see src/lib/space.ts). */

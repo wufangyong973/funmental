@@ -4,7 +4,7 @@ import type { Difficulty } from '../content/topics/types'
 import { addDays, dateKey, daysBetween } from './dates'
 import { MAX_HEIGHT, ZONES, formatAltitude } from './space'
 import { seeded, shuffle } from './rng'
-import { TOPICS, type TopicId } from './topics'
+import { TOPICS, type PracticeTopic, type TopicId } from './topics'
 
 /** Apogee #1 is this date. */
 export const EPOCH = '2026-10-09'
@@ -20,40 +20,67 @@ export const DAILY_ZONE = DAILY_DIFFICULTY.map((d) => ZONES.findIndex((z) => z.d
 export const dailyNumber = (key = dateKey()) => daysBetween(EPOCH, key) + 1
 export const dailyDate = (n: number) => addDays(EPOCH, n - 1)
 
-/** The topics take turns, one per day. */
-export const dailyTopic = (n: number): TopicId => TOPICS[(((n - 1) % TOPICS.length) + TOPICS.length) % TOPICS.length].id
+/** Every launch is a Daily Mix: each question has its own category. */
+export const dailyTopic = (_n: number): DailyTopic => 'mixed'
+
+/** 'mixed' for a launch with a different category per question. Saves from before Daily Mix may hold a single topic. */
+export type DailyTopic = PracticeTopic
+
+/** What the launch is called next to its number. */
+export const dailyTopicName = (_n: number) => 'Daily Mix'
+
+/** A question's category: a topic's bank, or a picture question. */
+export interface Category {
+  id: TopicId | PictureKind
+  name: string
+}
+
+const topic = (id: TopicId): Category => ({ id, name: TOPICS.find((t) => t.id === id)!.name })
+
+/** Every launch has these six categories... */
+const CORE: Category[] = [topic('science'), topic('math'), topic('history'), topic('geography'), { id: 'flag', name: 'Flags' }, { id: 'outline', name: 'Countries' }]
+
+/** ...plus one of these, taking turns. */
+const EXTRA: Category[] = [topic('screen'), topic('music'), topic('sports'), topic('food'), topic('general')]
+
+const themedCache: Category[][] = []
 
 /**
- * Geography days swap two of their questions for pictures: a flag at question 3
- * and a country outline at question 5.
+ * The category of each question in launch `n`. The order is reshuffled
+ * every day, so each category takes its turn at every difficulty.
  */
-export const GEOGRAPHY_PICTURES: Partial<Record<number, PictureKind>> = { 2: 'flag', 4: 'outline' }
+export function dailyCategories(n: number): Category[] {
+  themedCache[n] ??= shuffle([...CORE, EXTRA[(((n - 1) % EXTRA.length) + EXTRA.length) % EXTRA.length]], seeded(`themes:${n}`))
+  return themedCache[n]
+}
+
+const isPicture = (id: Category['id']): id is PictureKind => id === 'flag' || id === 'outline'
+const bankFor = (id: Category['id'], d: Difficulty) => (isPicture(id) ? picturePool(id, d) : pool(id, d))
+
+/** Deals card `index` from a deck that is reshuffled each time it runs out. */
+function deal(bank: readonly AskedQuestion['question'][], deck: string, index: number) {
+  const round = Math.floor(index / bank.length)
+  return shuffle(bank, seeded(`${deck}:${round}`))[index % bank.length]
+}
 
 /**
- * The seven questions for launch `n`, the same on every device. Everyone gets
- * the same topic each day, and each topic's questions are dealt from a fixed
- * shuffled deck per difficulty (and per picture kind), so a topic doesn't
- * repeat a question until it has used every one in that deck.
+ * The seven questions for launch `n`, the same on every device. Questions are
+ * dealt from a fixed shuffled deck per category and difficulty, so nothing
+ * repeats until its deck has been used up.
  */
 export function dailyQuestions(n: number): AskedQuestion[] {
-  const topic = dailyTopic(n)
-  const turn = Math.floor((n - 1) / TOPICS.length) // how many times this topic has come up before
-  const slots = DAILY_DIFFICULTY.map((difficulty, i) => {
-    const kind = topic === 'geography' ? GEOGRAPHY_PICTURES[i] : undefined
-    return { difficulty, kind, deck: kind ? `deck:${kind}:${difficulty}` : `deck:${topic}:${difficulty}` }
-  })
-  const needed = new Map<string, number>()
-  for (const s of slots) needed.set(s.deck, (needed.get(s.deck) ?? 0) + 1)
-
-  const dealt = new Map<string, number>()
   const rand = seeded(`daily:${n}`)
-  return slots.map(({ difficulty, kind, deck }) => {
-    const bank = kind ? picturePool(kind, difficulty) : pool(topic, difficulty)
-    const i = dealt.get(deck) ?? 0
-    dealt.set(deck, i + 1)
-    const slot = turn * needed.get(deck)! + i
-    const round = Math.floor(slot / bank.length)
-    return ask(shuffle(bank, seeded(`${deck}:${round}`))[slot % bank.length], rand)
+  // How many cards each deck has dealt on earlier days.
+  const used = new Map<string, number>()
+  for (let m = 1; m < n; m++) {
+    dailyCategories(m).forEach((c, i) => {
+      const key = `${c.id}:${DAILY_DIFFICULTY[i]}`
+      used.set(key, (used.get(key) ?? 0) + 1)
+    })
+  }
+  return dailyCategories(n).map((c, i) => {
+    const d = DAILY_DIFFICULTY[i]
+    return ask(deal(bankFor(c.id, d), `themed:${c.id}:${d}`, used.get(`${c.id}:${d}`) ?? 0), rand)
   })
 }
 
@@ -72,7 +99,7 @@ export function dailyPoints(answers: readonly boolean[]): number {
 }
 
 /** Wordle-style result to paste into a chat. */
-export function shareText(n: number, topicName: string, answers: readonly boolean[]): string {
+export function shareText(n: number, answers: readonly boolean[]): string {
   const squares = answers.map((ok, i) => (ok ? ZONES[DAILY_ZONE[i]].square : '⬛')).join('')
-  return `Apogee #${n} · ${topicName}\n${squares}  ${dailyPoints(answers)}/${MAX_POINTS} pts · ${formatAltitude(dailyHeight(answers))}`
+  return `Apogee #${n}\n${squares}  ${dailyPoints(answers)}/${MAX_POINTS} pts · ${formatAltitude(dailyHeight(answers))}`
 }

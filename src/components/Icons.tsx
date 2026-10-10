@@ -25,6 +25,12 @@ const TOPIC_PATHS: Record<PracticeTopic, ReactNode> = {
       <path d="M9 3h6M10 3v6l-5.4 9.4A1.7 1.7 0 0 0 6.1 21h11.8a1.7 1.7 0 0 0 1.5-2.6L14 9V3M7.5 14h9" />
     </g>
   ),
+  math: (
+    <g {...line}>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M7.5 8.5h4M9.5 6.5v4M13.5 8.5h4M7.7 14.3l3.6 3.6M11.3 14.3l-3.6 3.6M13.5 15h4M13.5 17.6h4" />
+    </g>
+  ),
   screen: (
     <g {...line}>
       <path d="M4 10h16v10H4zM4 10l1-4 15-2 .6 3.6M8.5 5.4l1.8 3.2M13.5 4.7l1.8 3.2" />

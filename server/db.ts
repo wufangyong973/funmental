@@ -56,5 +56,8 @@ export async function migrate(db: Db) {
       created_at timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (n, player)
     );
+    -- Launches #1 and #2 were first played as one-topic days, then replaced by
+    -- Daily Mix questions. Scores from the old questions don't compare.
+    DELETE FROM daily_scores WHERE n <= 2 AND created_at < '2026-10-10T13:30:00Z';
   `)
 }

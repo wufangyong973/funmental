@@ -1,15 +1,16 @@
-export type TopicId = 'general' | 'science' | 'history' | 'geography' | 'screen' | 'music' | 'sports' | 'food'
+export type TopicId = 'general' | 'science' | 'math' | 'history' | 'geography' | 'screen' | 'music' | 'sports' | 'food'
 
 export interface TopicMeta {
   id: TopicId
   name: string
 }
 
-/** Also the order the Daily Dive rotates through, one topic per day. */
+/** The question banks, in the order Practice lists them. */
 export const TOPICS: TopicMeta[] = [
   { id: 'general', name: 'General Knowledge' },
   { id: 'history', name: 'History' },
   { id: 'science', name: 'Science & Nature' },
+  { id: 'math', name: 'Math' },
   { id: 'screen', name: 'Movies & TV' },
   { id: 'geography', name: 'Geography' },
   { id: 'music', name: 'Music' },

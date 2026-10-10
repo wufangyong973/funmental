@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { DailyResults } from '../components/DailyResults'
 import { DailyRun } from '../components/DailyRun'
-import { DAILY_LENGTH, dailyHeight, dailyNumber, dailyTopic } from '../lib/daily'
+import { DAILY_LENGTH, dailyHeight, dailyNumber, dailyTopic, dailyTopicName } from '../lib/daily'
 import { dateKey } from '../lib/dates'
 import { answerDaily, startDaily, useAppData } from '../lib/store'
-import { topicMeta } from '../lib/topics'
 
 /** Today's free launch. Each answer is saved as it's given, and there's one attempt per day. */
 export function Daily() {
@@ -40,7 +39,7 @@ export function Daily() {
   return (
     <DailyRun
       n={n}
-      title={`Apogee #${n} · ${topicMeta(topic).name}`}
+      title={`Apogee #${n} · ${dailyTopicName(n)}`}
       initial={saved.answers}
       onAnswer={(answers) => {
         setPlayedHere(true)

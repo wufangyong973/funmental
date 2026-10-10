@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { DailyResults } from '../components/DailyResults'
 import { DailyRun } from '../components/DailyRun'
-import { dailyNumber, dailyTopic } from '../lib/daily'
+import { dailyNumber, dailyTopic, dailyTopicName } from '../lib/daily'
 import { useUnlocked } from '../lib/unlock'
-import { topicMeta } from '../lib/topics'
 
 /** Replays a past Daily Launch. Part of Practice; nothing is saved and streaks aren't affected. */
 export function Archive() {
@@ -26,5 +25,5 @@ export function Archive() {
       </div>
     )
   }
-  return <DailyRun key={n} n={n} title={`Replay · Apogee #${n} · ${topicMeta(topic).name}`} initial={[]} onFinish={setAnswers} />
+  return <DailyRun key={n} n={n} title={`Replay · Apogee #${n} · ${dailyTopicName(n)}`} initial={[]} onFinish={setAnswers} />
 }
